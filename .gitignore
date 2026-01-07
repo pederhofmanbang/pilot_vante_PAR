@@ -1,9 +1,6 @@
 # Dependencies
 node_modules/
 
-# Exports (genereras vid behov)
-exports/
-
 # Python (för framtida bruk)
 __pycache__/
 *.py[cod]

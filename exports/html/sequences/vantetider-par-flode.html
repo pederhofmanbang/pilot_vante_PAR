@@ -1,33 +1,9 @@
-#!/bin/bash
-# Genererar HTML-filer för Mermaid-diagram som kan öppnas i webbläsare
-# HTML-filerna har inbyggd export-funktion för PNG/SVG
-# Användning: ./scripts/export-diagrams.sh
-
-set -e
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-DIAGRAMS_DIR="$ROOT_DIR/diagrams"
-EXPORTS_DIR="$ROOT_DIR/exports"
-
-mkdir -p "$EXPORTS_DIR/html"
-
-generate_html() {
-    local file="$1"
-    local filename=$(basename "$file" .mmd)
-    local subdir=$(dirname "$file" | sed "s|$DIAGRAMS_DIR/||")
-    local content=$(cat "$file")
-
-    mkdir -p "$EXPORTS_DIR/html/$subdir"
-    local output_file="$EXPORTS_DIR/html/$subdir/$filename.html"
-
-    cat > "$output_file" << 'HTMLHEAD'
 <!DOCTYPE html>
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIAGRAM_TITLE</title>
+    <title>vantetider-par-flode</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -84,14 +60,55 @@ generate_html() {
         <button onclick="exportPNG()">Ladda ner PNG</button>
     </div>
     <div class="container">
-        <h1>DIAGRAM_TITLE</h1>
+        <h1>vantetider-par-flode</h1>
         <div class="mermaid" id="diagram">
-HTMLHEAD
+sequenceDiagram
+autonumber
+actor KCHD as KCHD (data/definition)
+participant HUB as Hubb centralt (VGR) <br/>CI/CD + Gateway + Benchmark
+participant REG as Regionnod (pilotregion) <br/>CDR/Pilot-DB + ETL/DQ + Export
+participant SOS as Socialstyrelsen (SoS) <br/>Väntetider + PAR mottagning
+actor USER as Användare (region/jämförelse)
 
-    # Escape content for HTML
-    echo "$content" >> "$output_file"
+%% --- Steg 1: Paketering (centralt) ---
+KCHD->>HUB: Skapar/uppdaterar: variabelspec (Väntetider+PAR), canonical modell, kodverk, DQ-regler, väntetidslogik
+HUB->>HUB: Bygger & versionssätter artefakter (containers, schemas, testsviter)
+HUB->>REG: Distribuerar paket (container images + konfig + schema + DQ-regler)
 
-    cat >> "$output_file" << 'HTMLFOOT'
+%% --- Steg 2–3: Förbered + Exekvera (i region) ---
+REG->>REG: Identifiera källsystem -> CDR/Vårdatalager
+REG->>REG: ETL1: forma input till canonical modell (staging)
+REG->>REG: DQ1: format/obligatoriska fält/kodverk/dubletter
+REG->>REG: ETL2: kör väntetidsberäkningar (hubblevererad container)
+REG->>REG: DQ2: rimlighet/logik efter beräkning
+REG->>REG: Skapar "Tvättad tabell" + Dataprodukt: Väntetider
+
+%% --- Steg 3: ETL3 / Export (tre utflöden från samma tvättade tabell) ---
+REG->>REG: ETL3-A: Skapar PN-fri/agg hubb-payload (benchmark)
+REG->>REG: ETL3-B: Skapar SoS Väntetider-payload (enligt SoS-format)
+REG->>REG: ETL3-C: Skapar SoS PAR-payload (enligt SoS-format inkl. PN där krävs)
+REG->>REG: Krypterar SoS-payloadar end-to-end för "blind relay" (hubben kan ej läsa)
+REG->>HUB: Skickar (A) PN-fri/agg payload + metadata + DQ-rapport
+REG->>HUB: Skickar (B)(C) krypterade SoS-payloadar + manifest (checksums)
+
+%% --- Steg 4: Hubb exekvering (centralt) ---
+HUB->>HUB: Validerar manifest, loggar/auditar, kvittens till region
+HUB->>HUB: Bearbetar/lagrar endast PN-fritt (benchmark store)
+HUB->>HUB: Kör jämförelser/aggregat och bygger återkoppling (dashboards/API)
+
+%% --- Steg 4: Hubben ersätter regionernas 1:1-transport till SoS ---
+alt Transport via SFTP/fil (pilotläge)
+  HUB->>SOS: Vidarebefordrar krypterad Väntetider- och PAR-payload via SFTP (blind relay)
+  SOS-->>HUB: Mottagningskvittens/teknisk status
+else Transport via API (målbild / SoS-test 2026+)
+  HUB->>SOS: Vidarebefordrar krypterad Väntetider- och PAR-payload via API (blind relay)
+  SOS-->>HUB: API-respons + kvittens/valideringsstatus
+end
+HUB-->>REG: Returnerar kvittensstatus + ev. valideringsfel (transportnivå)
+
+%% --- Steg 5: Återkoppling till användare/regioner ---
+HUB-->>USER: Benchmark/återkoppling (PN-fritt): jämförelser, DQ-insikter, förbättringsförslag
+HUB-->>REG: Återkopplingspaket (PN-fritt) + åtgärdslista för datakvalitet
         </div>
     </div>
     <script>
@@ -124,7 +141,7 @@ HTMLHEAD
 
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'DIAGRAM_FILENAME.svg';
+            a.download = 'vantetider-par-flode.svg';
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -150,7 +167,7 @@ HTMLHEAD
 
                 const a = document.createElement('a');
                 a.href = canvas.toDataURL('image/png');
-                a.download = 'DIAGRAM_FILENAME.png';
+                a.download = 'vantetider-par-flode.png';
                 a.click();
             };
 
@@ -159,26 +176,3 @@ HTMLHEAD
     </script>
 </body>
 </html>
-HTMLFOOT
-
-    # Replace placeholders
-    sed -i "s/DIAGRAM_TITLE/$filename/g" "$output_file"
-    sed -i "s/DIAGRAM_FILENAME/$filename/g" "$output_file"
-
-    echo "✓ Skapade: $output_file"
-}
-
-echo "Genererar HTML-filer med export-funktion..."
-echo ""
-
-find "$DIAGRAMS_DIR" -name "*.mmd" | while read -r file; do
-    generate_html "$file"
-done
-
-echo ""
-echo "Klart! Öppna HTML-filerna i en webbläsare för att:"
-echo "  - Visa diagrammet"
-echo "  - Exportera till PNG (för PowerPoint)"
-echo "  - Exportera till SVG (för web)"
-echo ""
-echo "Filer i: $EXPORTS_DIR/html/"

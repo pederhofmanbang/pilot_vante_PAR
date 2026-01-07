@@ -3,11 +3,6 @@
   "version": "1.0.0",
   "description": "Diagram och modeller för Väntetider/PAR-pilot",
   "scripts": {
-    "export": "./scripts/export-diagrams.sh",
-    "export:png": "./scripts/export-diagrams.sh png",
-    "export:svg": "./scripts/export-diagrams.sh svg"
-  },
-  "devDependencies": {
-    "@mermaid-js/mermaid-cli": "^11.4.0"
+    "export": "./scripts/export-diagrams.sh"
   }
 }

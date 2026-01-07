@@ -9,7 +9,7 @@ Diagram, modeller och verktyg för Väntetider/PAR-piloten.
 │   ├── sequences/      # Sekvensdiagram
 │   ├── flows/          # Flödesscheman
 │   └── models/         # ER-diagram, datamodeller
-├── exports/            # Genererade bilder (PNG/SVG)
+├── exports/            # Genererade HTML-filer med export
 ├── docs/               # Dokumentation
 ├── scripts/            # Hjälpscript
 ├── web/                # (framtida) Vite frontend
@@ -18,24 +18,16 @@ Diagram, modeller och verktyg för Väntetider/PAR-piloten.
 
 ## Kom igång
 
-### Installera beroenden
+### Generera exporterbara HTML-filer
 
 ```bash
-npm install
+./scripts/export-diagrams.sh
 ```
 
-### Exportera diagram till bilder
-
-```bash
-# Exportera alla diagram till PNG och SVG
-npm run export
-
-# Endast PNG (bra för PowerPoint)
-npm run export:png
-
-# Endast SVG (bra för web)
-npm run export:svg
-```
+Detta skapar HTML-filer i `exports/html/` som du kan:
+1. Öppna i webbläsaren för att visa diagrammet
+2. Klicka på **"Ladda ner PNG"** för PowerPoint (högupplöst 2x)
+3. Klicka på **"Ladda ner SVG"** för web/skalbar grafik
 
 ### Redigera diagram
 
@@ -46,15 +38,23 @@ npm run export:svg
 
 ### Sekvensdiagram
 
-| Diagram | Beskrivning |
-|---------|-------------|
-| [vantetider-par-flode](diagrams/sequences/vantetider-par-flode.mmd) | Huvudflöde för Väntetider/PAR: paketering, ETL, DQ, export till SoS |
+| Diagram | Beskrivning | Visa |
+|---------|-------------|------|
+| [vantetider-par-flode](diagrams/sequences/vantetider-par-flode.mmd) | Huvudflöde: paketering, ETL, DQ, export till SoS | [HTML](exports/html/sequences/vantetider-par-flode.html) |
 
 ## Användning i presentationer
 
-1. Kör `npm run export:png` för att generera högupplösta PNG-bilder
-2. Bilderna hamnar i `exports/png/`
-3. Dra in bilderna i PowerPoint
+1. Kör `./scripts/export-diagrams.sh`
+2. Öppna HTML-filen i `exports/html/` i din webbläsare
+3. Klicka **"Ladda ner PNG"** för en högupplöst bild
+4. Dra in PNG-filen i PowerPoint
+
+## Online-redigering
+
+Kopiera innehållet från en `.mmd`-fil och klistra in på [mermaid.live](https://mermaid.live) för att:
+- Redigera interaktivt
+- Exportera direkt till PNG/SVG
+- Dela via länk
 
 ## Licens
 
