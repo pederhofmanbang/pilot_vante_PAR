@@ -1,0 +1,47 @@
+sequenceDiagram
+autonumber
+actor KCHD as KCHD (data/definition)
+participant HUB as Hubb centralt (VGR) <br/>CI/CD + Gateway + Benchmark
+participant REG as Regionnod (pilotregion) <br/>CDR/Pilot-DB + ETL/DQ + Export
+participant SOS as Socialstyrelsen (SoS) <br/>Väntetider + PAR mottagning
+actor USER as Användare (region/jämförelse)
+
+%% --- Steg 1: Paketering (centralt) ---
+KCHD->>HUB: Skapar/uppdaterar: variabelspec (Väntetider+PAR), canonical modell, kodverk, DQ-regler, väntetidslogik
+HUB->>HUB: Bygger & versionssätter artefakter (containers, schemas, testsviter)
+HUB->>REG: Distribuerar paket (container images + konfig + schema + DQ-regler)
+
+%% --- Steg 2–3: Förbered + Exekvera (i region) ---
+REG->>REG: Identifiera källsystem -> CDR/Vårdatalager
+REG->>REG: ETL1: forma input till canonical modell (staging)
+REG->>REG: DQ1: format/obligatoriska fält/kodverk/dubletter
+REG->>REG: ETL2: kör väntetidsberäkningar (hubblevererad container)
+REG->>REG: DQ2: rimlighet/logik efter beräkning
+REG->>REG: Skapar "Tvättad tabell" + Dataprodukt: Väntetider
+
+%% --- Steg 3: ETL3 / Export (tre utflöden från samma tvättade tabell) ---
+REG->>REG: ETL3-A: Skapar PN-fri/agg hubb-payload (benchmark)
+REG->>REG: ETL3-B: Skapar SoS Väntetider-payload (enligt SoS-format)
+REG->>REG: ETL3-C: Skapar SoS PAR-payload (enligt SoS-format inkl. PN där krävs)
+REG->>REG: Krypterar SoS-payloadar end-to-end för "blind relay" (hubben kan ej läsa)
+REG->>HUB: Skickar (A) PN-fri/agg payload + metadata + DQ-rapport
+REG->>HUB: Skickar (B)(C) krypterade SoS-payloadar + manifest (checksums)
+
+%% --- Steg 4: Hubb exekvering (centralt) ---
+HUB->>HUB: Validerar manifest, loggar/auditar, kvittens till region
+HUB->>HUB: Bearbetar/lagrar endast PN-fritt (benchmark store)
+HUB->>HUB: Kör jämförelser/aggregat och bygger återkoppling (dashboards/API)
+
+%% --- Steg 4: Hubben ersätter regionernas 1:1-transport till SoS ---
+alt Transport via SFTP/fil (pilotläge)
+  HUB->>SOS: Vidarebefordrar krypterad Väntetider- och PAR-payload via SFTP (blind relay)
+  SOS-->>HUB: Mottagningskvittens/teknisk status
+else Transport via API (målbild / SoS-test 2026+)
+  HUB->>SOS: Vidarebefordrar krypterad Väntetider- och PAR-payload via API (blind relay)
+  SOS-->>HUB: API-respons + kvittens/valideringsstatus
+end
+HUB-->>REG: Returnerar kvittensstatus + ev. valideringsfel (transportnivå)
+
+%% --- Steg 5: Återkoppling till användare/regioner ---
+HUB-->>USER: Benchmark/återkoppling (PN-fritt): jämförelser, DQ-insikter, förbättringsförslag
+HUB-->>REG: Återkopplingspaket (PN-fritt) + åtgärdslista för datakvalitet

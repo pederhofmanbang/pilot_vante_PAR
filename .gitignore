@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Exports (genereras vid behov)
+exports/
+
+# Python (för framtida bruk)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.env
+
+# Vite/Node (för framtida bruk)
+dist/
+.cache/
+*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
