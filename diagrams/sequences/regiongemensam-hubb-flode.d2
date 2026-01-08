@@ -1,305 +1,99 @@
 # =========================================================
 # Regiongemensam hubb – flöde, federering och distribution
 # D2-version (arkitekturvy med flöden)
+# Förenklad för kroki.io-kompatibilitet
 # =========================================================
 
-title: |md
-  # Regiongemensam hubb
-  ## Flöde, federering och distribution
-|
-
-# ---------------------------------------------------------
-# Styling
-# ---------------------------------------------------------
 direction: right
 
-*.style.border-radius: 8
-*.style.font-size: 14
-
-# ---------------------------------------------------------
-# Aktörer/Komponenter
-# ---------------------------------------------------------
+# Aktorer
 region: Region {
-  style: {
-    fill: "#C7F9CC"
-    stroke: "#16A34A"
-    stroke-width: 2
-  }
+  shape: rectangle
+  style.fill: "#C7F9CC"
+  style.stroke: "#16A34A"
 
-  label: |md
-    **Region**
-    *(Producent + mottagare)*
-  |
+  basunderlag: Basunderlag (brett)
+  urval: Urval A/B/C/D
 
-  basunderlag: Basunderlag {
-    style.fill: "#DCFCE7"
-    label: |md
-      📊 **Basunderlag**
-      - ETL1: Källsystem → lager
-      - DQ1: Format, kodverk
-      - ETL2: Struktur + väntetider
-      - DQ2: Rimlighet
-    |
-  }
-
-  urval: Urval A/B/C/D {
-    style.fill: "#BBF7D0"
-    label: |md
-      📋 **Urval per behov**
-      A) Benchmark (PN-fritt)
-      B) SoS väntetider
-      C) SoS patientdata
-      D) Övrig extern
-    |
-  }
-
-  basunderlag -> urval: ETL3 + DQ3
+  basunderlag -> urval: ETL + DQ
 }
 
 hubb: Hubb (VGR) {
-  style: {
-    fill: "#BFDBFE"
-    stroke: "#2563EB"
-    stroke-width: 2
-  }
+  shape: rectangle
+  style.fill: "#BFDBFE"
+  style.stroke: "#2563EB"
 
-  label: |md
-    **Hubb**
-    *(Standard + benchmark + transport)*
-  |
-
-  standardpaket: Standardpaket P1-P7 {
-    style.fill: "#DBEAFE"
-    label: |md
-      📦 **Standardpaket**
-      P1. Variabellistor
-      P2. Definitioner
-      P3. Räknesätt
-      P4. Kvalitetskontroller
-      P5. Kopplingsstöd
-      P6. Leveransmallar
-      P7. Spårbarhet
-    |
-  }
-
-  benchmark: Benchmark-motor {
-    style.fill: "#93C5FD"
-    label: |md
-      📈 **Benchmark**
-      Jämförelser över
-      regioner & tid
-    |
-  }
-
-  transport: Blind Relay Transport {
-    style.fill: "#60A5FA"
-    label: |md
-      🔐 **Blind Relay**
-      Kan EJ dekryptera
-      Endast transport +
-      spårbarhet + kvittens
-    |
-  }
-
-  policy: Policy-gate {
-    style.fill: "#3B82F6"
-    style.font-color: white
-    label: |md
-      🛡️ **Policy-gate**
-      Behörighet, ändamål
-      Små-talsskydd
-    |
-  }
+  standardpaket: Standardpaket P1-P7
+  benchmark: Benchmark-motor
+  transport: Blind Relay
+  policy: Policy-gate
 }
 
 spe: SPE {
-  style: {
-    fill: "#DDD6FE"
-    stroke: "#7C3AED"
-    stroke-width: 2
-  }
-
-  label: |md
-    **SPE**
-    *(Federerad beräkning)*
-
-    🔒 Data stannar regionalt
-    Endast sammanställda
-    delresultat skickas
-  |
+  shape: rectangle
+  style.fill: "#DDD6FE"
+  style.stroke: "#7C3AED"
+  label: "SPE\n(Federerad berakning)"
 }
 
-externa: Externa användare {
-  style: {
-    fill: "#FED7AA"
-    stroke: "#EA580C"
-    stroke-width: 2
-  }
+externa: Externa {
+  shape: rectangle
+  style.fill: "#FED7AA"
+  style.stroke: "#EA580C"
 
-  sos: Socialstyrelsen {
-    style.fill: "#FDBA74"
-    label: |md
-      🏛️ **SoS**
-      • Väntetider
-      • PAR
-    |
-  }
-
-  ovriga: Övriga externa {
-    style.fill: "#FB923C"
-    label: |md
-      🔬 **Övriga**
-      • Forskning
-      • Jämförelsetjänster
-    |
-  }
+  sos: Socialstyrelsen
+  ovriga: Ovriga externa
 }
 
-# ---------------------------------------------------------
-# Flöden: PUSH (leveranser)
-# ---------------------------------------------------------
-push_label: {
-  style: {
-    fill: "#E0E7FF"
-    stroke: "#4F46E5"
-    stroke-width: 2
-    border-radius: 12
-  }
-  label: |md
-    ## 📤 PUSH-flöden
-    *Region skickar leverans*
-  |
-}
-
-# Standardpaket till region
-hubb.standardpaket -> region: {
-  label: "1. Publicerar standardpaket"
+# PUSH-floden
+hubb.standardpaket -> region: 1. Publicerar standardpaket {
   style.stroke: "#2563EB"
-  style.stroke-width: 2
 }
 
-# Benchmark-flöde
-region.urval -> hubb.benchmark: {
-  label: "2. Urval A (PN-fritt)"
+region.urval -> hubb.benchmark: 2. Urval A (PN-fritt) {
   style.stroke: "#16A34A"
-  style.stroke-width: 2
 }
 
-hubb.benchmark -> region: {
-  label: "Återkoppling + insikter"
+hubb.benchmark -> region: Aterkoppling {
   style.stroke: "#16A34A"
   style.stroke-dash: 3
 }
 
-# Externa leveranser (blind relay)
-region.urval -> hubb.transport: {
-  label: "3. Krypterat paket B/C/D + manifest"
+region.urval -> hubb.transport: 3. Krypterat paket {
   style.stroke: "#EA580C"
-  style.stroke-width: 2
 }
 
-hubb.transport -> externa.sos: {
-  label: "Blind relay (fil/API)"
+hubb.transport -> externa.sos: Blind relay {
   style.stroke: "#EA580C"
-  style.stroke-width: 2
 }
 
-hubb.transport -> externa.ovriga: {
-  label: "Blind relay (fil/API)"
+hubb.transport -> externa.ovriga: Blind relay {
   style.stroke: "#EA580C"
-  style.stroke-width: 2
 }
 
-externa.sos -> hubb.transport: {
-  label: "Kvittens"
-  style.stroke: "#EA580C"
-  style.stroke-dash: 3
-}
-
-externa.ovriga -> hubb.transport: {
-  label: "Kvittens"
-  style.stroke: "#EA580C"
-  style.stroke-dash: 3
-}
-
-# ---------------------------------------------------------
-# Flöden: PULL (federering)
-# ---------------------------------------------------------
-pull_label: {
-  style: {
-    fill: "#F3E8FF"
-    stroke: "#7C3AED"
-    stroke-width: 2
-    border-radius: 12
-  }
-  label: |md
-    ## 📥 PULL-flöden
-    *Federerad fråga via SPE*
-  |
-}
-
-# Hubb initierar
-hubb.policy -> spe: {
-  label: "4a. Federerad fråga (Q1/Q2/Q3)"
+# PULL-floden (federering)
+hubb.policy -> spe: 4. Federerad fraga {
   style.stroke: "#7C3AED"
-  style.stroke-width: 2
 }
 
-# Extern initierar
-externa.ovriga -> hubb.policy: {
-  label: "4b. Begär analys"
-  style.stroke: "#7C3AED"
-  style.stroke-width: 2
-}
-
-externa.sos -> hubb.policy: {
-  label: "4b. Begär analys"
+externa.ovriga -> hubb.policy: Begar analys {
   style.stroke: "#7C3AED"
   style.stroke-dash: 3
 }
 
-# SPE till region
-spe -> region.basunderlag: {
-  label: "Fråga + urval"
+spe -> region.basunderlag: Fraga + urval {
   style.stroke: "#7C3AED"
-  style.stroke-width: 2
 }
 
-region.basunderlag -> spe: {
-  label: "Sammanställda delresultat"
+region.basunderlag -> spe: Delresultat {
   style.stroke: "#7C3AED"
   style.stroke-dash: 3
 }
 
-spe -> hubb.policy: {
-  label: "Sammanställt resultat"
-  style.stroke: "#7C3AED"
-  style.stroke-dash: 3
-}
-
-# ---------------------------------------------------------
-# Viktig information
-# ---------------------------------------------------------
+# Info-ruta
 info: {
-  style: {
-    fill: "#FEE2E2"
-    stroke: "#DC2626"
-    stroke-width: 2
-    border-radius: 12
-  }
-  label: |md
-    ## ⚠️ Viktigt
-
-    **Hubben kan ALDRIG:**
-    - Dekryptera externa leveranser
-    - Se innehållet i SoS/extern-data
-
-    **Hubben lagrar ENDAST:**
-    - Benchmark-data (PN-fritt)
-    - Metadata & kvittenser
-
-    **Federering:**
-    - Rådata stannar i regionen
-    - Endast aggregat skickas
-  |
+  shape: rectangle
+  style.fill: "#FEE2E2"
+  style.stroke: "#DC2626"
+  label: "Viktigt:\n- Hubben kan EJ dekryptera\n- Endast benchmark lagras\n- Radata stannar i regionen"
 }
