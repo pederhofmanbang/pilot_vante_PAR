@@ -54,41 +54,20 @@
             transition: background 0.2s;
         }
         button:hover { background: #ea580c; }
-        button.secondary {
-            background: #e5e7eb;
-            color: #374151;
-        }
-        button.secondary:hover { background: #d1d5db; }
         .container {
             padding: 80px 20px 40px;
-            overflow-x: auto;
         }
-        .diagram-wrapper {
+        .iframe-wrapper {
             background: white;
             border-radius: 12px;
-            padding: 30px;
+            padding: 20px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            min-width: fit-content;
-            display: flex;
-            justify-content: center;
+            height: calc(100vh - 160px);
         }
-        #diagram {
-            max-width: 100%;
-        }
-        #diagram svg {
-            max-width: none;
-            height: auto;
-        }
-        .loading {
-            text-align: center;
-            padding: 60px;
-            color: #6b7280;
-        }
-        .error {
-            text-align: center;
-            padding: 40px;
-            color: #dc2626;
-            background: #fef2f2;
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
             border-radius: 8px;
         }
         .badge {
@@ -119,22 +98,18 @@
             <span class="badge">D2</span>
         </div>
         <div class="toolbar-right">
-            <button class="secondary" onclick="openInD2Playground()">Redigera online</button>
-            <button class="secondary" onclick="exportSVG()">Ladda ner SVG</button>
-            <button onclick="exportPNG()">Ladda ner PNG</button>
+            <button onclick="openFullscreen()">Öppna i helskärm</button>
         </div>
     </div>
 
     <div class="container">
-        <div class="diagram-wrapper">
-            <div id="diagram">
-                <div class="loading">Laddar diagram...</div>
-            </div>
+        <div class="iframe-wrapper">
+            <iframe id="d2-frame" src="" allowfullscreen></iframe>
         </div>
         <div class="info-box">
-            <strong>Om D2-versionen:</strong> Detta är en arkitekturvy som visar komponenter och flöden.
-            D2 är optimerat för arkitekturdiagram snarare än sekvensdiagram, så denna version visar
-            samma koncept men i ett annat format. Se Mermaid- eller PlantUML-versionen för det fullständiga sekvensdiagrammet.
+            <strong>Om D2-versionen:</strong> Diagrammet visas via D2 Playground.
+            Använd verktygen i playgrounden för att exportera till PNG/SVG.
+            D2 är optimerat för arkitekturdiagram och visar samma koncept som sekvensdiagrammet men i ett annat format.
         </div>
     </div>
 
@@ -178,81 +153,15 @@ spe -> region.basunderlag: Fraga
 region.basunderlag -> spe: Resultat {style.stroke-dash: 3}
 `;
 
-        let svgContent = null;
+        const playgroundUrl = 'https://play.d2lang.com/?script=' + encodeURIComponent(d2Code);
 
-        // Använd POST till kroki.io
-        async function loadDiagram() {
-            try {
-                const response = await fetch('https://kroki.io/d2/svg', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'text/plain'
-                    },
-                    body: d2Code
-                });
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('d2-frame').src = playgroundUrl;
+        });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                svgContent = await response.text();
-                document.getElementById('diagram').innerHTML = svgContent;
-            } catch (error) {
-                console.error('Fel vid laddning:', error);
-                document.getElementById('diagram').innerHTML = `
-                    <div class="error">
-                        <p><strong>Kunde inte ladda diagrammet</strong></p>
-                        <p style="margin-top: 10px; font-size: 0.9rem;">Klicka på "Redigera online" för att se diagrammet i D2 Playground.</p>
-                        <p style="margin-top: 10px; font-size: 0.8rem; color: #666;">Fel: ${error.message}</p>
-                    </div>
-                `;
-            }
+        function openFullscreen() {
+            window.open(playgroundUrl, '_blank');
         }
-
-        function exportSVG() {
-            if (!svgContent) {
-                alert('Diagrammet har inte laddats ännu');
-                return;
-            }
-            const blob = new Blob([svgContent], { type: 'image/svg+xml' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'regiongemensam-hubb-d2.svg';
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        async function exportPNG() {
-            try {
-                const response = await fetch('https://kroki.io/d2/png', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'text/plain'
-                    },
-                    body: d2Code
-                });
-
-                if (!response.ok) throw new Error('Kunde inte generera PNG');
-
-                const blob = await response.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'regiongemensam-hubb-d2.png';
-                a.click();
-                URL.revokeObjectURL(url);
-            } catch (error) {
-                alert('Kunde inte exportera PNG: ' + error.message);
-            }
-        }
-
-        function openInD2Playground() {
-            window.open('https://play.d2lang.com/?script=' + encodeURIComponent(d2Code), '_blank');
-        }
-
-        // Ladda diagrammet när sidan laddas
-        document.addEventListener('DOMContentLoaded', loadDiagram);
     </script>
 </body>
 </html>
