@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regiongemensam hubb – D2 (arkitekturvy)</title>
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .toolbar-left a {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .toolbar-left a:hover { color: #2563eb; }
+        .toolbar h1 {
+            font-size: 1.1rem;
+            color: #1f2937;
+        }
+        .toolbar-right {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #f97316;
+            color: white;
+            transition: background 0.2s;
+        }
+        button:hover { background: #ea580c; }
+        button.secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        button.secondary:hover { background: #d1d5db; }
+        .container {
+            padding: 80px 20px 40px;
+            overflow-x: auto;
+        }
+        .diagram-wrapper {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-width: fit-content;
+            display: flex;
+            justify-content: center;
+        }
+        #diagram {
+            max-width: 100%;
+        }
+        #diagram img {
+            max-width: none;
+            height: auto;
+        }
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #6b7280;
+        }
+        .badge {
+            background: #ffedd5;
+            color: #c2410c;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .info-box {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #92400e;
+        }
+        .info-box strong { color: #78350f; }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <a href="../">← Tillbaka</a>
+            <h1>Regiongemensam hubb – arkitekturvy</h1>
+            <span class="badge">D2</span>
+        </div>
+        <div class="toolbar-right">
+            <button class="secondary" onclick="openInD2Playground()">Redigera online</button>
+            <button class="secondary" onclick="exportSVG()">Ladda ner SVG</button>
+            <button onclick="exportPNG()">Ladda ner PNG</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="diagram-wrapper">
+            <div id="diagram">
+                <div class="loading">Laddar diagram...</div>
+            </div>
+        </div>
+        <div class="info-box">
+            <strong>Om D2-versionen:</strong> Detta är en arkitekturvy som visar komponenter och flöden.
+            D2 är optimerat för arkitekturdiagram snarare än sekvensdiagram, så denna version visar
+            samma koncept men i ett annat format. Se Mermaid- eller PlantUML-versionen för det fullständiga sekvensdiagrammet.
+        </div>
+    </div>
+
+    <script>
+        // D2-koden (inbäddad)
+        const d2Code = `# =========================================================
+# Regiongemensam hubb – flöde, federering och distribution
+# D2-version (arkitekturvy med flöden)
+# =========================================================
+
+title: |md
+  # Regiongemensam hubb
+  ## Flöde, federering och distribution
+|
+
+# ---------------------------------------------------------
+# Styling
+# ---------------------------------------------------------
+direction: right
+
+*.style.border-radius: 8
+*.style.font-size: 14
+
+# ---------------------------------------------------------
+# Aktörer/Komponenter
+# ---------------------------------------------------------
+region: Region {
+  style: {
+    fill: "#C7F9CC"
+    stroke: "#16A34A"
+    stroke-width: 2
+  }
+
+  label: |md
+    **Region**
+    *(Producent + mottagare)*
+  |
+
+  basunderlag: Basunderlag {
+    style.fill: "#DCFCE7"
+    label: |md
+      📊 **Basunderlag**
+      - ETL1: Källsystem → lager
+      - DQ1: Format, kodverk
+      - ETL2: Struktur + väntetider
+      - DQ2: Rimlighet
+    |
+  }
+
+  urval: Urval A/B/C/D {
+    style.fill: "#BBF7D0"
+    label: |md
+      📋 **Urval per behov**
+      A) Benchmark (PN-fritt)
+      B) SoS väntetider
+      C) SoS patientdata
+      D) Övrig extern
+    |
+  }
+
+  basunderlag -> urval: ETL3 + DQ3
+}
+
+hubb: Hubb (VGR) {
+  style: {
+    fill: "#BFDBFE"
+    stroke: "#2563EB"
+    stroke-width: 2
+  }
+
+  label: |md
+    **Hubb**
+    *(Standard + benchmark + transport)*
+  |
+
+  standardpaket: Standardpaket P1-P7 {
+    style.fill: "#DBEAFE"
+    label: |md
+      📦 **Standardpaket**
+      P1. Variabellistor
+      P2. Definitioner
+      P3. Räknesätt
+      P4. Kvalitetskontroller
+      P5. Kopplingsstöd
+      P6. Leveransmallar
+      P7. Spårbarhet
+    |
+  }
+
+  benchmark: Benchmark-motor {
+    style.fill: "#93C5FD"
+    label: |md
+      📈 **Benchmark**
+      Jämförelser över
+      regioner & tid
+    |
+  }
+
+  transport: Blind Relay Transport {
+    style.fill: "#60A5FA"
+    label: |md
+      🔐 **Blind Relay**
+      Kan EJ dekryptera
+      Endast transport +
+      spårbarhet + kvittens
+    |
+  }
+
+  policy: Policy-gate {
+    style.fill: "#3B82F6"
+    style.font-color: white
+    label: |md
+      🛡️ **Policy-gate**
+      Behörighet, ändamål
+      Små-talsskydd
+    |
+  }
+}
+
+spe: SPE {
+  style: {
+    fill: "#DDD6FE"
+    stroke: "#7C3AED"
+    stroke-width: 2
+  }
+
+  label: |md
+    **SPE**
+    *(Federerad beräkning)*
+
+    🔒 Data stannar regionalt
+    Endast sammanställda
+    delresultat skickas
+  |
+}
+
+externa: Externa användare {
+  style: {
+    fill: "#FED7AA"
+    stroke: "#EA580C"
+    stroke-width: 2
+  }
+
+  sos: Socialstyrelsen {
+    style.fill: "#FDBA74"
+    label: |md
+      🏛️ **SoS**
+      • Väntetider
+      • PAR
+    |
+  }
+
+  ovriga: Övriga externa {
+    style.fill: "#FB923C"
+    label: |md
+      🔬 **Övriga**
+      • Forskning
+      • Jämförelsetjänster
+    |
+  }
+}
+
+# ---------------------------------------------------------
+# Flöden: PUSH (leveranser)
+# ---------------------------------------------------------
+push_label: {
+  style: {
+    fill: "#E0E7FF"
+    stroke: "#4F46E5"
+    stroke-width: 2
+    border-radius: 12
+  }
+  label: |md
+    ## 📤 PUSH-flöden
+    *Region skickar leverans*
+  |
+}
+
+# Standardpaket till region
+hubb.standardpaket -> region: {
+  label: "1. Publicerar standardpaket"
+  style.stroke: "#2563EB"
+  style.stroke-width: 2
+}
+
+# Benchmark-flöde
+region.urval -> hubb.benchmark: {
+  label: "2. Urval A (PN-fritt)"
+  style.stroke: "#16A34A"
+  style.stroke-width: 2
+}
+
+hubb.benchmark -> region: {
+  label: "Återkoppling + insikter"
+  style.stroke: "#16A34A"
+  style.stroke-dash: 3
+}
+
+# Externa leveranser (blind relay)
+region.urval -> hubb.transport: {
+  label: "3. Krypterat paket B/C/D + manifest"
+  style.stroke: "#EA580C"
+  style.stroke-width: 2
+}
+
+hubb.transport -> externa.sos: {
+  label: "Blind relay (fil/API)"
+  style.stroke: "#EA580C"
+  style.stroke-width: 2
+}
+
+hubb.transport -> externa.ovriga: {
+  label: "Blind relay (fil/API)"
+  style.stroke: "#EA580C"
+  style.stroke-width: 2
+}
+
+externa.sos -> hubb.transport: {
+  label: "Kvittens"
+  style.stroke: "#EA580C"
+  style.stroke-dash: 3
+}
+
+externa.ovriga -> hubb.transport: {
+  label: "Kvittens"
+  style.stroke: "#EA580C"
+  style.stroke-dash: 3
+}
+
+# ---------------------------------------------------------
+# Flöden: PULL (federering)
+# ---------------------------------------------------------
+pull_label: {
+  style: {
+    fill: "#F3E8FF"
+    stroke: "#7C3AED"
+    stroke-width: 2
+    border-radius: 12
+  }
+  label: |md
+    ## 📥 PULL-flöden
+    *Federerad fråga via SPE*
+  |
+}
+
+# Hubb initierar
+hubb.policy -> spe: {
+  label: "4a. Federerad fråga (Q1/Q2/Q3)"
+  style.stroke: "#7C3AED"
+  style.stroke-width: 2
+}
+
+# Extern initierar
+externa.ovriga -> hubb.policy: {
+  label: "4b. Begär analys"
+  style.stroke: "#7C3AED"
+  style.stroke-width: 2
+}
+
+externa.sos -> hubb.policy: {
+  label: "4b. Begär analys"
+  style.stroke: "#7C3AED"
+  style.stroke-dash: 3
+}
+
+# SPE till region
+spe -> region.basunderlag: {
+  label: "Fråga + urval"
+  style.stroke: "#7C3AED"
+  style.stroke-width: 2
+}
+
+region.basunderlag -> spe: {
+  label: "Sammanställda delresultat"
+  style.stroke: "#7C3AED"
+  style.stroke-dash: 3
+}
+
+spe -> hubb.policy: {
+  label: "Sammanställt resultat"
+  style.stroke: "#7C3AED"
+  style.stroke-dash: 3
+}
+
+# ---------------------------------------------------------
+# Viktig information
+# ---------------------------------------------------------
+info: {
+  style: {
+    fill: "#FEE2E2"
+    stroke: "#DC2626"
+    stroke-width: 2
+    border-radius: 12
+  }
+  label: |md
+    ## ⚠️ Viktigt
+
+    **Hubben kan ALDRIG:**
+    - Dekryptera externa leveranser
+    - Se innehållet i SoS/extern-data
+
+    **Hubben lagrar ENDAST:**
+    - Benchmark-data (PN-fritt)
+    - Metadata & kvittenser
+
+    **Federering:**
+    - Rådata stannar i regionen
+    - Endast aggregat skickas
+  |
+}
+`;
+
+        // Kroki encoding for D2
+        function encodeForKroki(source) {
+            const data = new TextEncoder().encode(source);
+            const compressed = pako.deflate(data, { level: 9 });
+            const base64 = btoa(String.fromCharCode.apply(null, compressed));
+            return base64.replace(/\+/g, '-').replace(/\//g, '_');
+        }
+
+        const encoded = encodeForKroki(d2Code);
+        const krokiServer = 'https://kroki.io';
+        const svgUrl = `${krokiServer}/d2/svg/${encoded}`;
+        const pngUrl = `${krokiServer}/d2/png/${encoded}`;
+
+        // Load diagram
+        document.addEventListener('DOMContentLoaded', function() {
+            const img = document.createElement('img');
+            img.src = svgUrl;
+            img.alt = 'Regiongemensam hubb – arkitekturvy (D2)';
+            img.onload = function() {
+                document.getElementById('diagram').innerHTML = '';
+                document.getElementById('diagram').appendChild(img);
+            };
+            img.onerror = function() {
+                document.getElementById('diagram').innerHTML = '<p style="color: #ef4444;">Kunde inte ladda diagrammet från Kroki.io. Försök igen senare.</p>';
+            };
+        });
+
+        function exportPNG() {
+            const a = document.createElement('a');
+            a.href = pngUrl;
+            a.download = 'regiongemensam-hubb-d2.png';
+            a.target = '_blank';
+            a.click();
+        }
+
+        function exportSVG() {
+            const a = document.createElement('a');
+            a.href = svgUrl;
+            a.download = 'regiongemensam-hubb-d2.svg';
+            a.target = '_blank';
+            a.click();
+        }
+
+        function openInD2Playground() {
+            // D2 Playground uses base64 encoding
+            const base64 = btoa(unescape(encodeURIComponent(d2Code)));
+            window.open('https://play.d2lang.com/?script=' + encodeURIComponent(d2Code), '_blank');
+        }
+    </script>
+</body>
+</html>

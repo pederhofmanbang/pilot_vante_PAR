@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regiongemensam hubb – Mermaid</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .toolbar-left a {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .toolbar-left a:hover { color: #2563eb; }
+        .toolbar h1 {
+            font-size: 1.1rem;
+            color: #1f2937;
+        }
+        .toolbar-right {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #10b981;
+            color: white;
+            transition: background 0.2s;
+        }
+        button:hover { background: #059669; }
+        button.secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        button.secondary:hover { background: #d1d5db; }
+        .container {
+            padding: 80px 20px 40px;
+            overflow-x: auto;
+        }
+        .diagram-wrapper {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-width: fit-content;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+        .mermaid svg {
+            max-width: none;
+            height: auto;
+        }
+        .badge {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <a href="../">← Tillbaka</a>
+            <h1>Regiongemensam hubb – flöde</h1>
+            <span class="badge">Mermaid</span>
+        </div>
+        <div class="toolbar-right">
+            <button class="secondary" onclick="openInEditor()">Redigera online</button>
+            <button class="secondary" onclick="exportSVG()">Ladda ner SVG</button>
+            <button onclick="exportPNG()">Ladda ner PNG</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="diagram-wrapper">
+            <div class="mermaid" id="diagram">
+sequenceDiagram
+    autonumber
+
+    participant Region as Region<br/>(Producent + mottagare)
+    participant Hubb as Hubb<br/>(Standard + benchmark + transport)
+    participant SPE as SPE<br/>(Federerad beräkning)
+    participant SoS as Socialstyrelsen<br/>(SoS)
+    participant Extern as Övriga externa<br/>(Forskning m.fl.)
+
+    Note over Region,Extern: 📋 PUSH = Region skickar leverans (krypterad) | PULL = Federerad fråga via SPE
+
+    Note right of Hubb: 📦 Hubbens standardpaket (P1-P7):<br/>P1. Variabellistor<br/>P2. Definitioner/struktur<br/>P3. Räknesätt väntetider<br/>P4. Kvalitetskontroller<br/>P5. Kopplingsstöd<br/>P6. Leveransmallar<br/>P7. Spårbarhet
+
+    Note right of SPE: 🔒 SPE kör frågor nära datat<br/>Hämtar aldrig individdata i bulk<br/>Endast sammanställda delresultat
+
+    Note over Region: ⚙️ Regionens ETL/DQ-steg:<br/>ETL1: Källsystem → lager<br/>DQ1: Format, kodverk<br/>ETL2: Struktur + väntetider<br/>DQ2: Rimlighet<br/>ETL3: Urval A/B/C/D<br/>DQ3: Slutkontroll
+
+    Note over Hubb: ⚙️ Hubbens körning:<br/>• Bearbetar endast benchmark (PN-fritt)<br/>• Transporterar krypterat (blind relay)<br/>• Lagrar ej innehåll i externa leveranser
+
+    rect rgb(219, 234, 254)
+        Note over Hubb,Region: == 1. STANDARDPAKET ==
+        loop Vid uppdatering (ny version/krav)
+            Hubb->>Region: Publicerar uppdaterat standardpaket (P1–P7)
+        end
+        Note over Hubb,Region: Region uppgraderar version och kör samma flöde
+    end
+
+    rect rgb(220, 252, 231)
+        Note over Region: == 2. BASUNDERLAG ==
+        Region->>Region: Skapar basunderlag (brett) för flera behov
+        Region->>Region: Automatiska kontroller (kvalitet + rimlighet)
+        Region->>Region: Räknar väntetider (gemensamt räknesätt P3)
+        Region->>Region: Förbereder för snabb selektering (index)
+        Note over Region: 💡 Nyckelidé: Ett brett underlag en gång,<br/>sedan urval per användningsfall
+    end
+
+    rect rgb(254, 243, 199)
+        Note over Region: == 3. URVAL PER ANVÄNDNINGSFALL ==
+        Region->>Region: Urval A – Benchmark (sammanställning utan PN)
+        Region->>Region: Urval B – SoS väntetider (deras mall)
+        Region->>Region: Urval C – SoS patientdata (deras mall)
+        Region->>Region: Urval D – Övrig extern (godkänd process)
+        Note over Region: Nya behov = nytt urval, inte nytt specialuttag
+    end
+
+    rect rgb(224, 231, 255)
+        Note over Region,Extern: == 4. TVÅ SPÅR – PUSH ==
+
+        Note over Region,Hubb: 🅰️ Spår A: Benchmark (utan person-id)
+        Region->>Hubb: Skickar Urval A (sammanställning utan PN)
+        Hubb->>Hubb: Bygger jämförelser över regioner & tid
+        Hubb->>Region: Benchmark + förbättringsstöd + kvalitetsinsikter
+
+        Note over Region,Extern: 🅱️ Spår B: Distribution till externa (blind relay)
+        Region->>Hubb: Krypterat paket (SoS/Extern) + manifest (checksummor, metadata)
+
+        Note over Region,Hubb: 🔐 Hubben kan INTE dekryptera<br/>Hanterar endast transport, spårbarhet, kvittens
+
+        alt Pilotläge: Fil
+            Hubb->>SoS: Vidarebefordrar krypterat paket (blind relay, fil)
+            SoS-->>Hubb: Status/kvittens
+            Hubb->>Extern: Vidarebefordrar krypterat paket (blind relay, fil)
+            Extern-->>Hubb: Status/kvittens
+        else Målbild: API
+            Hubb->>SoS: Vidarebefordrar krypterat paket (blind relay, API)
+            SoS-->>Hubb: Status/kvittens
+            Hubb->>Extern: Vidarebefordrar krypterat paket (blind relay, API)
+            Extern-->>Hubb: Status/kvittens
+        end
+
+        Hubb-->>Region: Returnerar status/kvittenser + ev. fel
+    end
+
+    rect rgb(243, 232, 255)
+        Note over Hubb,Extern: == 5. FEDERERAD BERÄKNING – PULL ==
+        Note over Hubb,Extern: Kan initieras av: Region ELLER Externa<br/>Rådata flyttas aldrig centralt
+
+        alt När aggregerat räcker
+            Note over Hubb: Hubb använder redan sammanställningar<br/>(utan person-id) för jämförelser
+
+        else Alt A: Region/Hubb initierar
+            Note over Hubb,Region: 🔒 Integritetskänsligt – data stannar regionalt
+            Hubb->>SPE: Startar federerad körning (Q1/Q2/Q3 + period)
+            SPE->>Region: Federerad fråga + urval
+            Region->>Region: Kör lokalt (data stannar i regionen)
+            Region-->>SPE: Sammanställda delresultat (ej individdata)
+            SPE-->>Hubb: Slår ihop → sammanställning
+            Hubb->>Region: Återkoppling (benchmark/insikter)
+
+        else Alt B: Extern initierar (via policy-gate)
+            Note over Extern,Hubb: 🔒 Godkänd process krävs
+            Extern->>Hubb: Begär federerad analys (Qx + period + villkor)
+            Hubb->>Hubb: Policy-gate (behörighet, ändamål, små-talsskydd)
+            Hubb->>SPE: Startar federerad körning (godkända parametrar)
+            SPE->>Region: Federerad fråga + urval
+            Region->>Region: Kör lokalt (data stannar)
+            Region-->>SPE: Delresultat (sammanställning)
+            SPE-->>Hubb: Sammanställt resultat
+            Hubb-->>Extern: Levererar sammanställt resultat (aggregerat)
+            Note over Hubb,Extern: ⚠️ Extern får ENDAST sammanställt resultat<br/>Ingen åtkomst till individdata
+        end
+    end
+
+    rect rgb(255, 237, 213)
+        Note over SoS,Extern: == 6. EXTERNA ANVÄNDARE ==
+        Note over SoS: 🏛️ Socialstyrelsen:<br/>• Push: Väntetider + PAR (krypterat)<br/>• Pull: Federerade analyser
+        Note over Extern: 🔬 Övriga externa:<br/>• Push: Krypterade leveranser (avtal)<br/>• Pull: Federerade analyser
+        Note over SoS,Extern: ✅ Hubben ser ALDRIG innehållet<br/>i krypterade leveranser
+    end
+            </div>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            sequence: {
+                diagramMarginX: 50,
+                diagramMarginY: 10,
+                actorMargin: 80,
+                width: 180,
+                height: 65,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageMargin: 35,
+                mirrorActors: false,
+                useMaxWidth: false
+            }
+        });
+
+        function exportSVG() {
+            const svg = document.querySelector('.mermaid svg');
+            if (!svg) return alert('Diagram ej laddat ännu');
+
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const blob = new Blob([svgData], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'regiongemensam-hubb-mermaid.svg';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function exportPNG() {
+            const svg = document.querySelector('.mermaid svg');
+            if (!svg) return alert('Diagram ej laddat ännu');
+
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+
+            img.onload = function() {
+                const scale = 2;
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.scale(scale, scale);
+                ctx.drawImage(img, 0, 0);
+
+                const a = document.createElement('a');
+                a.href = canvas.toDataURL('image/png');
+                a.download = 'regiongemensam-hubb-mermaid.png';
+                a.click();
+            };
+
+            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+        }
+
+        function openInEditor() {
+            const code = document.querySelector('.mermaid').textContent;
+            const encoded = btoa(unescape(encodeURIComponent(JSON.stringify({ code, mermaid: { theme: 'default' } }))));
+            window.open('https://mermaid.live/edit#base64:' + encoded, '_blank');
+        }
+    </script>
+</body>
+</html>

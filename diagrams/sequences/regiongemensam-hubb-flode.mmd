@@ -1,0 +1,142 @@
+sequenceDiagram
+    autonumber
+
+    %% =========================================================
+    %% Regiongemensamt flöde – Mermaid-version
+    %% =========================================================
+
+    title: Regiongemensam hubb – flöde, federering och distribution
+
+    %% Deltagare
+    participant Region as Region<br/>(Producent + mottagare)
+    participant Hubb as Hubb<br/>(Standard + benchmark + transport)
+    participant SPE as SPE<br/>(Federerad beräkning)
+    participant SoS as Socialstyrelsen<br/>(SoS)
+    participant Extern as Övriga externa<br/>(Forskning m.fl.)
+
+    %% =========================================================
+    %% Legend och översikt (som note)
+    %% =========================================================
+    Note over Region,Extern: 📋 PUSH = Region skickar leverans (krypterad) | PULL = Federerad fråga via SPE
+
+    Note right of Hubb: 📦 Hubbens standardpaket (P1-P7):<br/>P1. Variabellistor<br/>P2. Definitioner/struktur<br/>P3. Räknesätt väntetider<br/>P4. Kvalitetskontroller<br/>P5. Kopplingsstöd<br/>P6. Leveransmallar<br/>P7. Spårbarhet
+
+    Note right of SPE: 🔒 SPE kör frågor nära datat<br/>Hämtar aldrig individdata i bulk<br/>Endast sammanställda delresultat
+
+    %% =========================================================
+    %% 0b) Under huven - ETL/DQ
+    %% =========================================================
+    Note over Region: ⚙️ Regionens ETL/DQ-steg:<br/>ETL1: Källsystem → lager<br/>DQ1: Format, kodverk<br/>ETL2: Struktur + väntetider<br/>DQ2: Rimlighet<br/>ETL3: Urval A/B/C/D<br/>DQ3: Slutkontroll
+
+    Note over Hubb: ⚙️ Hubbens körning:<br/>• Bearbetar endast benchmark (PN-fritt)<br/>• Transporterar krypterat (blind relay)<br/>• Lagrar ej innehåll i externa leveranser
+
+    %% =========================================================
+    %% 1) Standardpaket
+    %% =========================================================
+    rect rgb(219, 234, 254)
+        Note over Hubb,Region: == 1. STANDARDPAKET ==
+        loop Vid uppdatering (ny version/krav)
+            Hubb->>Region: Publicerar uppdaterat standardpaket (P1–P7)
+        end
+        Note over Hubb,Region: Region uppgraderar version och kör samma flöde
+    end
+
+    %% =========================================================
+    %% 2) Basunderlag
+    %% =========================================================
+    rect rgb(220, 252, 231)
+        Note over Region: == 2. BASUNDERLAG ==
+        Region->>Region: Skapar basunderlag (brett) för flera behov
+        Region->>Region: Automatiska kontroller (kvalitet + rimlighet)
+        Region->>Region: Räknar väntetider (gemensamt räknesätt P3)
+        Region->>Region: Förbereder för snabb selektering (index)
+        Note over Region: 💡 Nyckelidé: Ett brett underlag en gång,<br/>sedan urval per användningsfall
+    end
+
+    %% =========================================================
+    %% 3) Urval per användningsfall
+    %% =========================================================
+    rect rgb(254, 243, 199)
+        Note over Region: == 3. URVAL PER ANVÄNDNINGSFALL ==
+        Region->>Region: Urval A – Benchmark (sammanställning utan PN)
+        Region->>Region: Urval B – SoS väntetider (deras mall)
+        Region->>Region: Urval C – SoS patientdata (deras mall)
+        Region->>Region: Urval D – Övrig extern (godkänd process)
+        Note over Region: Nya behov = nytt urval, inte nytt specialuttag
+    end
+
+    %% =========================================================
+    %% 4) Två spår - PUSH
+    %% =========================================================
+    rect rgb(224, 231, 255)
+        Note over Region,Extern: == 4. TVÅ SPÅR – PUSH ==
+
+        %% Spår A: Benchmark
+        Note over Region,Hubb: 🅰️ Spår A: Benchmark (utan person-id)
+        Region->>Hubb: Skickar Urval A (sammanställning utan PN)
+        Hubb->>Hubb: Bygger jämförelser över regioner & tid
+        Hubb->>Region: Benchmark + förbättringsstöd + kvalitetsinsikter
+
+        %% Spår B: Externa
+        Note over Region,Extern: 🅱️ Spår B: Distribution till externa (blind relay)
+        Region->>Hubb: Krypterat paket (SoS/Extern) + manifest (checksummor, metadata)
+
+        Note over Region,Hubb: 🔐 Hubben kan INTE dekryptera<br/>Hanterar endast transport, spårbarhet, kvittens
+
+        alt Pilotläge: Fil
+            Hubb->>SoS: Vidarebefordrar krypterat paket (blind relay, fil)
+            SoS-->>Hubb: Status/kvittens
+            Hubb->>Extern: Vidarebefordrar krypterat paket (blind relay, fil)
+            Extern-->>Hubb: Status/kvittens
+        else Målbild: API
+            Hubb->>SoS: Vidarebefordrar krypterat paket (blind relay, API)
+            SoS-->>Hubb: Status/kvittens
+            Hubb->>Extern: Vidarebefordrar krypterat paket (blind relay, API)
+            Extern-->>Hubb: Status/kvittens
+        end
+
+        Hubb-->>Region: Returnerar status/kvittenser + ev. fel
+    end
+
+    %% =========================================================
+    %% 5) Federering via SPE - PULL
+    %% =========================================================
+    rect rgb(243, 232, 255)
+        Note over Hubb,Extern: == 5. FEDERERAD BERÄKNING – PULL ==
+        Note over Hubb,Extern: Kan initieras av: Region ELLER Externa<br/>Rådata flyttas aldrig centralt
+
+        alt När aggregerat räcker
+            Note over Hubb: Hubb använder redan sammanställningar<br/>(utan person-id) för jämförelser
+
+        else Alt A: Region/Hubb initierar
+            Note over Hubb,Region: 🔒 Integritetskänsligt – data stannar regionalt
+            Hubb->>SPE: Startar federerad körning (Q1/Q2/Q3 + period)
+            SPE->>Region: Federerad fråga + urval
+            Region->>Region: Kör lokalt (data stannar i regionen)
+            Region-->>SPE: Sammanställda delresultat (ej individdata)
+            SPE-->>Hubb: Slår ihop → sammanställning
+            Hubb->>Region: Återkoppling (benchmark/insikter)
+
+        else Alt B: Extern initierar (via policy-gate)
+            Note over Extern,Hubb: 🔒 Godkänd process krävs
+            Extern->>Hubb: Begär federerad analys (Qx + period + villkor)
+            Hubb->>Hubb: Policy-gate (behörighet, ändamål, små-talsskydd)
+            Hubb->>SPE: Startar federerad körning (godkända parametrar)
+            SPE->>Region: Federerad fråga + urval
+            Region->>Region: Kör lokalt (data stannar)
+            Region-->>SPE: Delresultat (sammanställning)
+            SPE-->>Hubb: Sammanställt resultat
+            Hubb-->>Extern: Levererar sammanställt resultat (aggregerat)
+            Note over Hubb,Extern: ⚠️ Extern får ENDAST sammanställt resultat<br/>Ingen åtkomst till individdata
+        end
+    end
+
+    %% =========================================================
+    %% 6) Sammanfattning externa
+    %% =========================================================
+    rect rgb(255, 237, 213)
+        Note over SoS,Extern: == 6. EXTERNA ANVÄNDARE ==
+        Note over SoS: 🏛️ Socialstyrelsen:<br/>• Push: Väntetider + PAR (krypterat)<br/>• Pull: Federerade analyser
+        Note over Extern: 🔬 Övriga externa:<br/>• Push: Krypterade leveranser (avtal)<br/>• Pull: Federerade analyser
+        Note over SoS,Extern: ✅ Hubben ser ALDRIG innehållet<br/>i krypterade leveranser
+    end

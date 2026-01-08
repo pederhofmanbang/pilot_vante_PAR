@@ -95,6 +95,7 @@
         }
         .type-mermaid { background: #d1fae5; color: #065f46; }
         .type-plantuml { background: #ede9fe; color: #5b21b6; }
+        .type-d2 { background: #ffedd5; color: #c2410c; }
         .info {
             margin-top: 20px;
             padding: 20px;
@@ -146,11 +147,27 @@
             <h2>Sekvensdiagram</h2>
             <ul class="diagram-list">
                 <li>
-                    <a href="sequences/regiongemensam-hubb-flode.html">Regiongemensam hubb – flöde, federering och distribution</a>
+                    <a href="sequences/regiongemensam-hubb-flode.html">Regiongemensam hubb – flöde (PlantUML)</a>
                     <p class="diagram-desc">Komplett sekvensdiagram som visar flödet mellan Region, Hubb, SPE och externa användare. Inkluderar standardpaket (P1-P7), ETL/DQ-steg, urval per användningsfall, benchmark, distribution och federerad beräkning.</p>
                     <div class="diagram-meta">
                         <span class="type type-plantuml">PlantUML</span>
-                        <span>Detaljnivå</span>
+                        <span>Detaljnivå – Sekvensdiagram</span>
+                    </div>
+                </li>
+                <li>
+                    <a href="sequences/regiongemensam-hubb-mermaid.html">Regiongemensam hubb – flöde (Mermaid)</a>
+                    <p class="diagram-desc">Samma sekvensdiagram i Mermaid-format. Bra för GitHub-rendering och enkel redigering. Alla flöden och sektioner inkluderade.</p>
+                    <div class="diagram-meta">
+                        <span class="type type-mermaid">Mermaid</span>
+                        <span>Detaljnivå – Sekvensdiagram</span>
+                    </div>
+                </li>
+                <li>
+                    <a href="sequences/regiongemensam-hubb-d2.html">Regiongemensam hubb – arkitekturvy (D2)</a>
+                    <p class="diagram-desc">Arkitekturdiagram som visar komponenter och dataflöden. D2 är optimerat för arkitekturvyer och visar samma koncept i ett annat format.</p>
+                    <div class="diagram-meta">
+                        <span class="type type-d2">D2</span>
+                        <span>Arkitekturvy – Komponentdiagram</span>
                     </div>
                 </li>
                 <li>
