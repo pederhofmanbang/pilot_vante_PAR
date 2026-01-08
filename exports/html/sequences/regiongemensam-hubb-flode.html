@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regiongemensam hubb – flöde, federering och distribution</title>
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .toolbar-left a {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .toolbar-left a:hover {
+            color: #2563eb;
+        }
+        .toolbar h1 {
+            font-size: 1.1rem;
+            color: #1f2937;
+        }
+        .toolbar-right {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #8b5cf6;
+            color: white;
+            transition: background 0.2s;
+        }
+        button:hover { background: #7c3aed; }
+        button.secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        button.secondary:hover { background: #d1d5db; }
+        .container {
+            padding: 80px 20px 40px;
+            overflow-x: auto;
+        }
+        .diagram-wrapper {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-width: fit-content;
+            display: flex;
+            justify-content: center;
+        }
+        #diagram {
+            max-width: 100%;
+        }
+        #diagram img {
+            max-width: none;
+            height: auto;
+        }
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #6b7280;
+        }
+        .badge {
+            background: #ede9fe;
+            color: #5b21b6;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <a href="../">← Tillbaka</a>
+            <h1>Regiongemensam hubb – flöde, federering och distribution</h1>
+            <span class="badge">PlantUML</span>
+        </div>
+        <div class="toolbar-right">
+            <button class="secondary" onclick="openInPlantUMLEditor()">Redigera online</button>
+            <button class="secondary" onclick="exportSVG()">Ladda ner SVG</button>
+            <button onclick="exportPNG()">Ladda ner PNG</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="diagram-wrapper">
+            <div id="diagram">
+                <div class="loading">Laddar diagram...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // PlantUML-koden (inbäddad)
+        const plantUmlCode = `@startuml
+' =========================================================
+' Regiongemensamt flöde (pilot + målbild) – Sekvensdiagram
+' Deltagare: Region (vänster), Hubb (mitten), SPE (separat mitt), Externa användare (höger)
+' =========================================================
+
+title Regiongemensam hubb – flöde, federering och distribution (detaljnivå)
+
+autonumber
+hide footbox
+
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam sequence {
+  ArrowColor #1F2937
+  LifeLineBorderColor #9CA3AF
+  LifeLineBackgroundColor #FFFFFF
+  ParticipantBorderColor #111827
+  ParticipantBackgroundColor #F9FAFB
+  ParticipantFontColor #111827
+  BoxBorderColor #6B7280
+  BoxBackgroundColor #F3F4F6
+  GroupBackgroundColor #F9FAFB
+  GroupBorderColor #9CA3AF
+  NoteBackgroundColor #FFF7ED
+  NoteBorderColor #F59E0B
+}
+
+' ---------------------------------------------------------
+' Layout / swimlane-känsla
+' ---------------------------------------------------------
+box "Region" #ECFDF5
+participant Region as "Region\\n(Producent + mottagare)"
+end box
+
+box "Hubb (värd: t.ex. VGR)" #EFF6FF
+participant Hubb as "Hubb\\n(Standard + benchmark + distribution)"
+end box
+
+box "SPE (kan drivas av region, myndighet eller annan aktör)" #F5F3FF
+participant SPE as "SPE\\n(Federerad beräkning vid behov)"
+end box
+
+box "Externa användare" #FFFBEB
+participant Externa as "Externa användare\\n(SoS, forskning, m.fl.)"
+end box
+
+' =========================================================
+' 0) Översikt/legend (synlig info istället för hover)
+' =========================================================
+note right of Hubb
+**Hubbens standardpaket (P1–P7), publiceras & versionshålls centralt**
+P1. Gemensamma variabellistor (vad som behövs, definitioner)
+P2. Gemensamma definitioner/struktur ("samma sak betyder samma sak")
+P3. Gemensamt räknesätt för väntetider
+P4. Gemensamma kvalitetskontroller (stoppar/varnar)
+P5. Stöd för att koppla rätt (inkl. intelligent assistans)
+P6. Mallar för leveranser till mottagare (t.ex. SoS väntetider & PAR)
+P7. Spårbarhet (version, förändringar, "vad kördes när")
+end note
+
+note right of SPE
+**Vad SPE är (i det här upplägget)**
+- Kör frågor "nära datat" (i regionerna)
+- Hämtar inte hem individnivå i bulk
+- Samlar bara sammanställda delresultat
+- Används bara när centrala beräkningar kräver det
+end note
+
+legend left
+**Exempel på federerade frågor (Q1–Q3)**
+Q1: Jämför väntetider per område & månad (median/percentiler)
+Q2: Datakvalitet – andel saknade/ogiltiga fält senaste perioden
+Q3: Andel som passerar gränsvärde (t.ex. > X dagar) per vecka
+endlegend
+
+' =========================================================
+' 0b) Fakta: ETL/DQ-steg som finns "under huven"
+' =========================================================
+note over Region
+**Detaljsteg som ingår i regionens körning (under huven)**
+- ETL1: Hämta från källsystem till regionalt lager ("landning")
+- DQ1: Grundkontroller (format, obligatoriska fält, kodverk)
+- ETL2: Forma enligt gemensam struktur + beräkna väntetider (gemensamt räknesätt)
+- DQ2: Rimlighetskontroller efter beräkning (datumordning, extrema värden)
+- ETL3: Skapa leveranser/urval för olika användningsfall:
+  A) Benchmark (sammanställning utan person-id)
+  B) Socialstyrelsen väntetider (enligt deras mall)
+  C) Socialstyrelsen patientdata (enligt deras mall)
+  D) Övriga externa (enligt process/överenskommelse)
+- DQ3: Slutkontroll före skick (kompletthet, summeringar, avvikelser)
+end note
+
+note over Hubb
+**Detaljsteg som ingår i hubbens körning (under huven)**
+- Tar emot, loggar och kvitterar (status + spårbarhet)
+- Bearbetar/lagrar endast benchmark-underlag (utan person-id)
+- Bygger jämförelser över tid + mellan regioner
+- Vidareförmedlar leveranser till externa (fil nu / API sen)
+end note
+
+' =========================================================
+' 1) Paketering och uppdatering (centralt -> region)
+' =========================================================
+== 1. Standardpaket (byggs och hålls uppdaterat centralt) ==
+
+loop Vid uppdatering (ny version / nya krav / förbättrad logik)
+  Hubb -> Region: Publicerar uppdaterat standardpaket (P1–P7)
+  note over Hubb,Region
+  Regionen slipper bygga om från grunden.
+  Regionen uppgraderar version och kör samma flöde igen.
+  end note
+end
+
+' =========================================================
+' 2) Region skapar basunderlag (brett) + kvalitet + beräkningar
+' =========================================================
+== 2. Region skapar basunderlag (brett) och kör enligt standard ==
+
+Region -> Region: Skapar **basunderlag** (brett) som kan användas för flera behov
+Region -> Region: Gör automatiska kontroller (kvalitet + rimlighet)
+Region -> Region: Räknar väntetider enligt gemensamt räknesätt (P3)
+Region -> Region: Förbereder för snabb selektering ("index") för att minimera framtida överföringar
+
+note over Region
+**Nyckelidé:** Regionen tar fram ett bredare underlag en gång.
+Sedan görs urval/mappning per användningsfall (se nästa steg).
+end note
+
+' =========================================================
+' 3) Urval per användningsfall (tydliggör "många behov, samma bas")
+' =========================================================
+== 3. Urval per användningsfall (från samma basunderlag) ==
+
+group Regionen gör urval/mappning per behov (utan att börja om från källorna)
+  Region -> Region: Urval A – för jämförelse mellan regioner (sammanställning utan person-id)
+  Region -> Region: Urval B – för Socialstyrelsen: väntetider (enligt deras mall)
+  Region -> Region: Urval C – för Socialstyrelsen: patientdata (enligt deras mall)
+  Region -> Region: Urval D – för annan extern användare (t.ex. forskning – enligt godkänd process)
+end group
+
+note over Region
+Urvalen bygger på samma basunderlag.
+Det gör att nya behov kan lösas genom nytt urval – inte nytt "specialuttag".
+end note
+
+' =========================================================
+' 4) Två huvudspår: Benchmark/återkoppling + Distribution till externa
+' =========================================================
+== 4. Två spår (benchmark + extern distribution) ==
+
+par Spår A: Benchmark & återkoppling (utan person-id)
+  Region -> Hubb: Skickar Urval A (sammanställning utan person-id)
+  Hubb -> Hubb: Bygger jämförelser över regioner & tid
+  Hubb -> Region: Skickar tillbaka benchmark + förbättringsstöd + kvalitetsinsikter
+else Spår B: Distribution till externa användare (via hubben)
+  Region -> Hubb: Skickar Urval B/C/D för vidareförmedling
+  note over Region,Hubb
+  Regionen skickar en gång till hubben.
+  Hubben sköter vidareförmedling + status/kvittenser.
+  end note
+
+  alt Pilotläge: Filöverföring
+    Hubb -> Externa: Vidareförmedlar leverans (fil)
+    Externa --> Hubb: Status/kvittenser (ok/fel)
+  else Målbild: API
+    Hubb -> Externa: Vidareförmedlar leverans (API)
+    Externa --> Hubb: Status/kvittenser (ok/fel)
+  end
+
+  Hubb --> Region: Returnerar status/kvittenser + ev. felmeddelanden
+end
+
+' =========================================================
+' 5) Federering via SPE (vid behov)
+' =========================================================
+== 5. Federerad beräkning via SPE (när centrala beräkningar kräver det) ==
+
+alt När aggregerat räcker (ingen federering behövs)
+  note over Hubb
+  Hubb använder sammanställningar utan person-id
+  för jämförelser och återkoppling.
+  end note
+else När beräkningen kräver koppling på individnivå men ska göras federerat
+  critical Integritetskänsligt moment (federerat – data stannar regionalt)
+    Hubb -> SPE: Startar federerad körning (välj fråga Q1/Q2/Q3 + period + regler)
+    SPE -> Region: Federerad fråga (Q1/Q2/Q3) + urval (tidsperiod, regler)
+    Region -> Region: Kör lokalt på basunderlaget (data stannar i regionen)
+    Region --> SPE: Returnerar enbart sammanställda delresultat (ej individdata)
+    SPE --> Hubb: Slår ihop delresultat och lämnar sammanställning
+  end
+
+  Hubb -> Region: Återkoppling (benchmark/insikter) baserat på federerat resultat
+end
+
+' =========================================================
+' 6) Externa användare – exempel (förankrar att SoS ligger här)
+' =========================================================
+== 6. Externa användare (exempel) ==
+
+note right of Externa
+Exempel på externa användare:
+- Socialstyrelsen (olika mottagningar)
+- Forskning (via godkända processer)
+- Andra nationella aktörer / jämförelsetjänster
+end note
+
+@enduml`;
+
+        // PlantUML encoding functions
+        function encode64(data) {
+            let r = "";
+            for (let i = 0; i < data.length; i += 3) {
+                if (i + 2 == data.length) {
+                    r += append3bytes(data.charCodeAt(i), data.charCodeAt(i + 1), 0);
+                } else if (i + 1 == data.length) {
+                    r += append3bytes(data.charCodeAt(i), 0, 0);
+                } else {
+                    r += append3bytes(data.charCodeAt(i), data.charCodeAt(i + 1), data.charCodeAt(i + 2));
+                }
+            }
+            return r;
+        }
+
+        function append3bytes(b1, b2, b3) {
+            let c1 = b1 >> 2;
+            let c2 = ((b1 & 0x3) << 4) | (b2 >> 4);
+            let c3 = ((b2 & 0xF) << 2) | (b3 >> 6);
+            let c4 = b3 & 0x3F;
+            let r = "";
+            r += encode6bit(c1 & 0x3F);
+            r += encode6bit(c2 & 0x3F);
+            r += encode6bit(c3 & 0x3F);
+            r += encode6bit(c4 & 0x3F);
+            return r;
+        }
+
+        function encode6bit(b) {
+            if (b < 10) return String.fromCharCode(48 + b);
+            b -= 10;
+            if (b < 26) return String.fromCharCode(65 + b);
+            b -= 26;
+            if (b < 26) return String.fromCharCode(97 + b);
+            b -= 26;
+            if (b == 0) return '-';
+            if (b == 1) return '_';
+            return '?';
+        }
+
+        function compress(s) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(s);
+            const compressed = pako.deflate(data, { level: 9, to: 'string' });
+            return compressed;
+        }
+
+        function encodePlantUml(text) {
+            const compressed = pako.deflateRaw(new TextEncoder().encode(text), { level: 9 });
+            return encode64(String.fromCharCode.apply(null, compressed));
+        }
+
+        // URLs
+        const encoded = encodePlantUml(plantUmlCode);
+        const plantUmlServer = 'https://www.plantuml.com/plantuml';
+        const svgUrl = `${plantUmlServer}/svg/${encoded}`;
+        const pngUrl = `${plantUmlServer}/png/${encoded}`;
+
+        // Load diagram
+        document.addEventListener('DOMContentLoaded', function() {
+            const img = document.createElement('img');
+            img.src = svgUrl;
+            img.alt = 'Regiongemensam hubb – flöde, federering och distribution';
+            img.onload = function() {
+                document.getElementById('diagram').innerHTML = '';
+                document.getElementById('diagram').appendChild(img);
+            };
+            img.onerror = function() {
+                document.getElementById('diagram').innerHTML = '<p style="color: #ef4444;">Kunde inte ladda diagrammet. Försök igen senare.</p>';
+            };
+        });
+
+        function exportPNG() {
+            const a = document.createElement('a');
+            a.href = pngUrl;
+            a.download = 'regiongemensam-hubb-flode.png';
+            a.target = '_blank';
+            a.click();
+        }
+
+        function exportSVG() {
+            const a = document.createElement('a');
+            a.href = svgUrl;
+            a.download = 'regiongemensam-hubb-flode.svg';
+            a.target = '_blank';
+            a.click();
+        }
+
+        function openInPlantUMLEditor() {
+            window.open(`${plantUmlServer}/uml/${encoded}`, '_blank');
+        }
+    </script>
+</body>
+</html>

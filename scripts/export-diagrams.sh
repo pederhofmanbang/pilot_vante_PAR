@@ -1,7 +1,11 @@
 #!/bin/bash
-# Genererar HTML-filer för Mermaid-diagram som kan öppnas i webbläsare
+# Genererar HTML-filer för diagram (Mermaid och PlantUML)
 # HTML-filerna har inbyggd export-funktion för PNG/SVG
 # Användning: ./scripts/export-diagrams.sh
+#
+# Stöder:
+#   - .mmd (Mermaid) - renderas med mermaid.js
+#   - .puml (PlantUML) - renderas via PlantUML server
 
 set -e
 
@@ -9,16 +13,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 DIAGRAMS_DIR="$ROOT_DIR/diagrams"
 EXPORTS_DIR="$ROOT_DIR/exports"
+DOCS_DIR="$ROOT_DIR/docs"
 
 mkdir -p "$EXPORTS_DIR/html"
 
-generate_html() {
+# ============================================================
+# Mermaid HTML generator
+# ============================================================
+generate_mermaid_html() {
     local file="$1"
     local filename=$(basename "$file" .mmd)
     local subdir=$(dirname "$file" | sed "s|$DIAGRAMS_DIR/||")
     local content=$(cat "$file")
 
     mkdir -p "$EXPORTS_DIR/html/$subdir"
+    mkdir -p "$DOCS_DIR/$subdir"
     local output_file="$EXPORTS_DIR/html/$subdir/$filename.html"
 
     cat > "$output_file" << 'HTMLHEAD'
@@ -35,15 +44,38 @@ generate_html() {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #f5f5f5;
             min-height: 100vh;
-            padding: 20px;
         }
         .toolbar {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .toolbar-left a {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .toolbar-left a:hover { color: #2563eb; }
+        .toolbar h1 {
+            font-size: 1.1rem;
+            color: #1f2937;
+        }
+        .toolbar-right {
             display: flex;
             gap: 10px;
-            z-index: 100;
         }
         button {
             padding: 10px 20px;
@@ -51,22 +83,26 @@ generate_html() {
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            background: #2563eb;
+            background: #10b981;
             color: white;
             transition: background 0.2s;
         }
-        button:hover { background: #1d4ed8; }
+        button:hover { background: #059669; }
+        button.secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        button.secondary:hover { background: #d1d5db; }
         .container {
-            background: white;
-            border-radius: 12px;
-            padding: 40px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 80px 20px 40px;
             overflow-x: auto;
         }
-        h1 {
-            margin-bottom: 30px;
-            color: #1f2937;
-            font-size: 1.5rem;
+        .diagram-wrapper {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-width: fit-content;
         }
         .mermaid {
             display: flex;
@@ -76,22 +112,37 @@ generate_html() {
             max-width: 100%;
             height: auto;
         }
+        .badge {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
     <div class="toolbar">
-        <button onclick="exportSVG()">Ladda ner SVG</button>
-        <button onclick="exportPNG()">Ladda ner PNG</button>
+        <div class="toolbar-left">
+            <a href="../">← Tillbaka</a>
+            <h1>DIAGRAM_TITLE</h1>
+            <span class="badge">Mermaid</span>
+        </div>
+        <div class="toolbar-right">
+            <button class="secondary" onclick="exportSVG()">Ladda ner SVG</button>
+            <button onclick="exportPNG()">Ladda ner PNG</button>
+        </div>
     </div>
     <div class="container">
-        <h1>DIAGRAM_TITLE</h1>
-        <div class="mermaid" id="diagram">
+        <div class="diagram-wrapper">
+            <div class="mermaid" id="diagram">
 HTMLHEAD
 
-    # Escape content for HTML
     echo "$content" >> "$output_file"
 
     cat >> "$output_file" << 'HTMLFOOT'
+            </div>
         </div>
     </div>
     <script>
@@ -139,7 +190,6 @@ HTMLHEAD
             const img = new Image();
 
             img.onload = function() {
-                // Högupplöst för PowerPoint (2x)
                 const scale = 2;
                 canvas.width = img.width * scale;
                 canvas.height = img.height * scale;
@@ -161,24 +211,61 @@ HTMLHEAD
 </html>
 HTMLFOOT
 
-    # Replace placeholders
     sed -i "s/DIAGRAM_TITLE/$filename/g" "$output_file"
     sed -i "s/DIAGRAM_FILENAME/$filename/g" "$output_file"
 
-    echo "✓ Skapade: $output_file"
+    # Kopiera till docs för GitHub Pages
+    cp "$output_file" "$DOCS_DIR/$subdir/"
+
+    echo "✓ [Mermaid] $filename"
 }
 
-echo "Genererar HTML-filer med export-funktion..."
+# ============================================================
+# PlantUML HTML generator
+# ============================================================
+generate_plantuml_html() {
+    local file="$1"
+    local filename=$(basename "$file" .puml)
+    local subdir=$(dirname "$file" | sed "s|$DIAGRAMS_DIR/||")
+
+    mkdir -p "$EXPORTS_DIR/html/$subdir"
+    mkdir -p "$DOCS_DIR/$subdir"
+
+    echo "✓ [PlantUML] $filename"
+    echo "  → PlantUML-filer hanteras manuellt eller finns redan i docs/"
+}
+
+# ============================================================
+# Main
+# ============================================================
+echo "=========================================="
+echo "  Diagram Export Script"
+echo "=========================================="
+echo ""
+echo "Genererar HTML-filer för diagram..."
 echo ""
 
-find "$DIAGRAMS_DIR" -name "*.mmd" | while read -r file; do
-    generate_html "$file"
+# Process Mermaid files
+find "$DIAGRAMS_DIR" -name "*.mmd" 2>/dev/null | while read -r file; do
+    generate_mermaid_html "$file"
+done
+
+# Note about PlantUML files
+find "$DIAGRAMS_DIR" -name "*.puml" 2>/dev/null | while read -r file; do
+    generate_plantuml_html "$file"
 done
 
 echo ""
-echo "Klart! Öppna HTML-filerna i en webbläsare för att:"
+echo "=========================================="
+echo "  Klart!"
+echo "=========================================="
+echo ""
+echo "Filer exporterade till:"
+echo "  - exports/html/  (lokal användning)"
+echo "  - docs/          (GitHub Pages)"
+echo ""
+echo "Öppna HTML-filerna i webbläsare för att:"
 echo "  - Visa diagrammet"
 echo "  - Exportera till PNG (för PowerPoint)"
 echo "  - Exportera till SVG (för web)"
 echo ""
-echo "Filer i: $EXPORTS_DIR/html/"

@@ -13,7 +13,7 @@
             padding: 40px 20px;
         }
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
         }
         h1 {
@@ -31,38 +31,72 @@
             border-radius: 12px;
             padding: 30px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
         }
         h2 {
             color: #1f2937;
             margin-bottom: 20px;
             font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
+        h2 .badge {
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .badge-mermaid { background: #10b981; color: white; }
+        .badge-plantuml { background: #8b5cf6; color: white; }
         .diagram-list {
             list-style: none;
         }
         .diagram-list li {
-            border-bottom: 1px solid #e5e7eb;
-            padding: 15px 0;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.2s;
         }
-        .diagram-list li:last-child {
-            border-bottom: none;
+        .diagram-list li:hover {
+            border-color: #2563eb;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
         }
         .diagram-list a {
             color: #2563eb;
             text-decoration: none;
-            font-weight: 500;
+            font-weight: 600;
             font-size: 1.1rem;
+            display: block;
+            margin-bottom: 8px;
         }
         .diagram-list a:hover {
             text-decoration: underline;
         }
         .diagram-desc {
             color: #6b7280;
-            margin-top: 5px;
             font-size: 0.95rem;
+            line-height: 1.5;
         }
+        .diagram-meta {
+            display: flex;
+            gap: 15px;
+            margin-top: 12px;
+            font-size: 0.85rem;
+        }
+        .diagram-meta span {
+            color: #9ca3af;
+        }
+        .diagram-meta .type {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .type-mermaid { background: #d1fae5; color: #065f46; }
+        .type-plantuml { background: #ede9fe; color: #5b21b6; }
         .info {
-            margin-top: 30px;
+            margin-top: 20px;
             padding: 20px;
             background: #f3f4f6;
             border-radius: 8px;
@@ -72,6 +106,29 @@
         .info strong {
             color: #1f2937;
         }
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .nav-links a {
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+            font-size: 0.95rem;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.25);
+        }
+        footer {
+            text-align: center;
+            color: rgba(255,255,255,0.6);
+            margin-top: 40px;
+            font-size: 0.85rem;
+        }
     </style>
 </head>
 <body>
@@ -79,20 +136,65 @@
         <h1>Pilot Väntetider/PAR</h1>
         <p class="subtitle">Diagram och modeller</p>
 
-        <div class="card">
+        <nav class="nav-links">
+            <a href="#sequences">Sekvensdiagram</a>
+            <a href="#flows">Flödesscheman</a>
+            <a href="#models">Datamodeller</a>
+        </nav>
+
+        <div class="card" id="sequences">
             <h2>Sekvensdiagram</h2>
             <ul class="diagram-list">
                 <li>
-                    <a href="sequences/vantetider-par-flode.html">Väntetider/PAR-flöde</a>
-                    <p class="diagram-desc">Huvudflöde: paketering, ETL, DQ, export till Socialstyrelsen</p>
+                    <a href="sequences/regiongemensam-hubb-flode.html">Regiongemensam hubb – flöde, federering och distribution</a>
+                    <p class="diagram-desc">Komplett sekvensdiagram som visar flödet mellan Region, Hubb, SPE och externa användare. Inkluderar standardpaket (P1-P7), ETL/DQ-steg, urval per användningsfall, benchmark, distribution och federerad beräkning.</p>
+                    <div class="diagram-meta">
+                        <span class="type type-plantuml">PlantUML</span>
+                        <span>Detaljnivå</span>
+                    </div>
+                </li>
+                <li>
+                    <a href="sequences/vantetider-par-flode.html">Väntetider/PAR-flöde (tekniskt)</a>
+                    <p class="diagram-desc">Tekniskt flöde för Väntetider/PAR: paketering, ETL, DQ, export till Socialstyrelsen.</p>
+                    <div class="diagram-meta">
+                        <span class="type type-mermaid">Mermaid</span>
+                        <span>Teknisk implementation</span>
+                    </div>
                 </li>
             </ul>
+        </div>
 
+        <div class="card" id="flows">
+            <h2>Flödesscheman</h2>
+            <ul class="diagram-list">
+                <li>
+                    <p class="diagram-desc" style="color: #9ca3af; font-style: italic;">Inga flödesscheman ännu. Lägg till i diagrams/flows/</p>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card" id="models">
+            <h2>Datamodeller</h2>
+            <ul class="diagram-list">
+                <li>
+                    <p class="diagram-desc" style="color: #9ca3af; font-style: italic;">Inga datamodeller ännu. Lägg till i diagrams/models/</p>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card">
             <div class="info">
                 <strong>Tips:</strong> Klicka på ett diagram för att öppna det.
                 Där kan du ladda ner som PNG (för PowerPoint) eller SVG (för web).
+                <br><br>
+                <strong>Lägg till diagram:</strong> Skapa .mmd (Mermaid) eller .puml (PlantUML) filer i
+                <code>diagrams/</code> och kör <code>./scripts/export-diagrams.sh</code>
             </div>
         </div>
+
+        <footer>
+            Internt projekt – VGR | Pilot Väntetider/PAR
+        </footer>
     </div>
 </body>
 </html>
