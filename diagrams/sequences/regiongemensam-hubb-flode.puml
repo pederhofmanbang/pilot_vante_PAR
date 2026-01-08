@@ -12,37 +12,38 @@ hide footbox
 skinparam shadowing false
 skinparam backgroundColor #FFFFFF
 skinparam sequence {
-  ArrowColor #1F2937
-  LifeLineBorderColor #9CA3AF
+  ArrowColor #0F172A
+  LifeLineBorderColor #475569
   LifeLineBackgroundColor #FFFFFF
-  ParticipantBorderColor #111827
-  ParticipantBackgroundColor #F9FAFB
-  ParticipantFontColor #111827
-  BoxBorderColor #6B7280
-  BoxBackgroundColor #F3F4F6
-  GroupBackgroundColor #F9FAFB
-  GroupBorderColor #9CA3AF
-  NoteBackgroundColor #FFF7ED
-  NoteBorderColor #F59E0B
+  ParticipantBorderColor #1E293B
+  ParticipantBackgroundColor #F8FAFC
+  ParticipantFontColor #0F172A
+  BoxBorderColor #64748B
+  BoxBackgroundColor #F1F5F9
+  GroupBackgroundColor #F8FAFC
+  GroupBorderColor #64748B
+  NoteBackgroundColor #F8FAFC
+  NoteBorderColor #94A3B8
 }
 
 ' ---------------------------------------------------------
-' Layout / swimlane-känsla
+' Layout / swimlane-känsla (uppdaterade färger)
 ' ---------------------------------------------------------
-box "Region" #ECFDF5
+box "Region" #ECFDF3
 participant Region as "Region\n(Producent + mottagare)"
 end box
 
 box "Hubb (värd: t.ex. VGR)" #EFF6FF
-participant Hubb as "Hubb\n(Standard + benchmark + distribution)"
+participant Hubb as "Hubb\n(Standard + benchmark + transport)"
 end box
 
 box "SPE (kan drivas av region, myndighet eller annan aktör)" #F5F3FF
 participant SPE as "SPE\n(Federerad beräkning vid behov)"
 end box
 
-box "Externa användare" #FFFBEB
-participant Externa as "Externa användare\n(SoS, forskning, m.fl.)"
+box "Externa användare" #FFF7ED
+participant SoS as "Socialstyrelsen\n(SoS)"
+participant Extern as "Övriga externa\n(Forskning, andra aktörer)"
 end box
 
 ' =========================================================
@@ -64,7 +65,13 @@ note right of SPE
 - Kör frågor "nära datat" (i regionerna)
 - Hämtar inte hem individnivå i bulk
 - Samlar bara sammanställda delresultat
-- Används bara när centrala beräkningar kräver det
+- Används av hubb, regioner och externa (via policy-gate)
+end note
+
+note right of SoS
+**SoS:** Mottar väntetider & PAR (krypterat)
+**Övriga externa:** Forskning, jämförelsetjänster
+(kräver godkänd process/avtal)
 end note
 
 legend left
@@ -72,6 +79,10 @@ legend left
 Q1: Jämför väntetider per område & månad (median/percentiler)
 Q2: Datakvalitet – andel saknade/ogiltiga fält senaste perioden
 Q3: Andel som passerar gränsvärde (t.ex. > X dagar) per vecka
+
+**Push vs Pull**
+• **Push:** Region skickar leverans (krypterad för mottagare)
+• **Pull:** Federerad fråga via SPE → sammanställda delresultat
 endlegend
 
 ' =========================================================
@@ -94,9 +105,9 @@ end note
 note over Hubb
 **Detaljsteg som ingår i hubbens körning (under huven)**
 - Tar emot, loggar och kvitterar (status + spårbarhet)
-- Bearbetar/lagrar endast benchmark-underlag (utan person-id)
+- **Bearbetar/lagrar:** endast benchmark-underlag (utan person-id)
 - Bygger jämförelser över tid + mellan regioner
-- Vidareförmedlar leveranser till externa (fil nu / API sen)
+- **Transporterar:** krypterade paket (blind relay), lagrar ej innehåll
 end note
 
 ' =========================================================
@@ -147,41 +158,54 @@ end note
 ' =========================================================
 ' 4) Två huvudspår: Benchmark/återkoppling + Distribution till externa
 ' =========================================================
-== 4. Två spår (benchmark + extern distribution) ==
+== 4. Två spår – PUSH (benchmark + extern distribution) ==
 
 par Spår A: Benchmark & återkoppling (utan person-id)
   Region -> Hubb: Skickar Urval A (sammanställning utan person-id)
   Hubb -> Hubb: Bygger jämförelser över regioner & tid
   Hubb -> Region: Skickar tillbaka benchmark + förbättringsstöd + kvalitetsinsikter
-else Spår B: Distribution till externa användare (via hubben)
-  Region -> Hubb: Skickar Urval B/C/D för vidareförmedling
+else Spår B: Distribution till externa användare (via hubben, blind relay)
+  Region -> Hubb: Skickar krypterat paket (för SoS/Extern) + manifest (checksummor, metadata, version)
+
   note over Region,Hubb
-  Regionen skickar en gång till hubben.
-  Hubben sköter vidareförmedling + status/kvittenser.
+  **Hubben kan inte dekryptera.**
+  Den hanterar endast transport, spårbarhet, kvittens.
   end note
 
   alt Pilotläge: Filöverföring
-    Hubb -> Externa: Vidareförmedlar leverans (fil)
-    Externa --> Hubb: Status/kvittenser (ok/fel)
+    Hubb -> SoS: Vidarebefordrar krypterat paket (blind relay, fil)
+    SoS --> Hubb: Status/kvittens (ok/fel)
+    Hubb -> Extern: Vidarebefordrar krypterat paket (blind relay, fil)
+    Extern --> Hubb: Status/kvittens (ok/fel)
   else Målbild: API
-    Hubb -> Externa: Vidareförmedlar leverans (API)
-    Externa --> Hubb: Status/kvittenser (ok/fel)
+    Hubb -> SoS: Vidarebefordrar krypterat paket (blind relay, API)
+    SoS --> Hubb: Status/kvittens (ok/fel)
+    Hubb -> Extern: Vidarebefordrar krypterat paket (blind relay, API)
+    Extern --> Hubb: Status/kvittens (ok/fel)
   end
 
   Hubb --> Region: Returnerar status/kvittenser + ev. felmeddelanden
 end
 
 ' =========================================================
-' 5) Federering via SPE (vid behov)
+' 5) Federering via SPE (vid behov) – PULL
 ' =========================================================
-== 5. Federerad beräkning via SPE (när centrala beräkningar kräver det) ==
+== 5. Federerad beräkning via SPE – PULL (sammanställda resultat) ==
+
+note over Hubb,Extern
+**Federering kan initieras av:**
+• Region (för egen återkoppling/benchmark)
+• Externa användare (för sammanställda svar, via policy-gate)
+Rådata flyttas aldrig centralt – endast sammanställda delresultat.
+end note
 
 alt När aggregerat räcker (ingen federering behövs)
   note over Hubb
   Hubb använder sammanställningar utan person-id
   för jämförelser och återkoppling.
   end note
-else När beräkningen kräver koppling på individnivå men ska göras federerat
+
+else Alt A: Region/Hubb initierar federerad fråga
   critical Integritetskänsligt moment (federerat – data stannar regionalt)
     Hubb -> SPE: Startar federerad körning (välj fråga Q1/Q2/Q3 + period + regler)
     SPE -> Region: Federerad fråga (Q1/Q2/Q3) + urval (tidsperiod, regler)
@@ -189,20 +213,41 @@ else När beräkningen kräver koppling på individnivå men ska göras federera
     Region --> SPE: Returnerar enbart sammanställda delresultat (ej individdata)
     SPE --> Hubb: Slår ihop delresultat och lämnar sammanställning
   end
-
   Hubb -> Region: Återkoppling (benchmark/insikter) baserat på federerat resultat
+
+else Alt B: Extern användare initierar federerad fråga (via policy-gate)
+  critical Extern begär federerad analys (godkänd process krävs)
+    Extern -> Hubb: Begär federerad analys (Q1/Q2/Q3 + period + villkor)
+    Hubb -> Hubb: Policy-gate (behörighet, ändamål, små-talsskydd, minsta möjliga data)
+    Hubb -> SPE: Startar federerad körning (Qx + godkända parametrar)
+    SPE -> Region: Federerad fråga (Qx) + urval (tidsperiod, regler)
+    Region -> Region: Kör lokalt (data stannar i regionen)
+    Region --> SPE: Delresultat (endast sammanställning, ej individdata)
+    SPE --> Hubb: Sammanställt resultat
+  end
+  Hubb --> Extern: Levererar sammanställt resultat (aggregerat)
+
+  note over Hubb,Extern
+  **Extern får endast sammanställt resultat enligt policy.**
+  Ingen åtkomst till individdata eller rådata.
+  end note
 end
 
 ' =========================================================
-' 6) Externa användare – exempel (förankrar att SoS ligger här)
+' 6) Externa användare – sammanfattning
 ' =========================================================
-== 6. Externa användare (exempel) ==
+== 6. Externa användare (sammanfattning) ==
 
-note right of Externa
-Exempel på externa användare:
-- Socialstyrelsen (olika mottagningar)
-- Forskning (via godkända processer)
-- Andra nationella aktörer / jämförelsetjänster
+note over SoS,Extern
+**Socialstyrelsen (SoS)**
+• Mottar: Väntetider + PAR (krypterade leveranser via push)
+• Kan begära: Federerade analyser (via pull/policy-gate)
+
+**Övriga externa (forskning, jämförelsetjänster)**
+• Mottar: Krypterade leveranser (om avtal finns)
+• Kan begära: Federerade analyser (via pull/policy-gate)
+
+**Gemensamt:** Hubben ser aldrig innehållet i krypterade leveranser.
 end note
 
 @enduml
