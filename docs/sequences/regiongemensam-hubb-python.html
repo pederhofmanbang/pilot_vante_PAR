@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regiongemensam hubb – Python-genererat sekvensdiagram</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .toolbar-left a {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .toolbar-left a:hover { color: #2563eb; }
+        .toolbar h1 {
+            font-size: 1.1rem;
+            color: #1f2937;
+        }
+        .toolbar-right {
+            display: flex;
+            gap: 10px;
+        }
+        button, .btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #10b981;
+            color: white;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        button:hover, .btn:hover { background: #059669; }
+        button.secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        button.secondary:hover { background: #d1d5db; }
+        .container {
+            padding: 80px 20px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .content-wrapper {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .badge {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .info-box {
+            background: #ecfdf5;
+            border: 1px solid #10b981;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            color: #065f46;
+        }
+        .info-box strong { color: #047857; }
+        .diagram-container {
+            text-align: center;
+            overflow-x: auto;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+        .diagram-container img {
+            max-width: 100%;
+            height: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        .download-section {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <a href="../">← Tillbaka</a>
+            <h1>Regiongemensam hubb – Python-genererat</h1>
+            <span class="badge">Python/matplotlib</span>
+        </div>
+        <div class="toolbar-right">
+            <a href="../../exports/python/regiongemensam-hubb-sekvens.png" download class="btn secondary">Ladda ner PNG</a>
+            <a href="../../exports/python/regiongemensam-hubb-sekvens.svg" download class="btn">Ladda ner SVG</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="content-wrapper">
+            <div class="info-box">
+                <strong>Python-genererat diagram:</strong> Detta sekvensdiagram är skapat med Python och matplotlib.
+                Det innehåller samma information som PlantUML-versionen men med anpassad styling och färger.
+                Diagrammet kan regenereras genom att köra <code>python python/diagrams/sequence_diagram.py</code>
+            </div>
+
+            <div class="diagram-container">
+                <img src="../../exports/python/regiongemensam-hubb-sekvens.png" alt="Regiongemensam hubb sekvensdiagram">
+            </div>
+
+            <div class="download-section">
+                <a href="../../exports/python/regiongemensam-hubb-sekvens.png" download class="btn secondary">📥 PNG (för PowerPoint)</a>
+                <a href="../../exports/python/regiongemensam-hubb-sekvens.svg" download class="btn">📥 SVG (för web/skalbar)</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
