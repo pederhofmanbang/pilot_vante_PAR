@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Regiongemensam hubb – D2 (arkitekturvy)</title>
-    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -76,7 +75,7 @@
         #diagram {
             max-width: 100%;
         }
-        #diagram img {
+        #diagram svg {
             max-width: none;
             height: auto;
         }
@@ -84,6 +83,13 @@
             text-align: center;
             padding: 60px;
             color: #6b7280;
+        }
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #dc2626;
+            background: #fef2f2;
+            border-radius: 8px;
         }
         .badge {
             background: #ffedd5;
@@ -133,153 +139,120 @@
     </div>
 
     <script>
-        // D2-koden (förenklad för kroki.io-kompatibilitet)
         const d2Code = `direction: right
 
-# Aktorer
 region: Region {
-  shape: rectangle
   style.fill: "#C7F9CC"
-  style.stroke: "#16A34A"
-
-  basunderlag: Basunderlag (brett)
+  basunderlag: Basunderlag
   urval: Urval A/B/C/D
-
-  basunderlag -> urval: ETL + DQ
+  basunderlag -> urval
 }
 
-hubb: Hubb (VGR) {
-  shape: rectangle
+hubb: Hubb {
   style.fill: "#BFDBFE"
-  style.stroke: "#2563EB"
-
   standardpaket: Standardpaket P1-P7
-  benchmark: Benchmark-motor
+  benchmark: Benchmark
   transport: Blind Relay
   policy: Policy-gate
 }
 
 spe: SPE {
-  shape: rectangle
   style.fill: "#DDD6FE"
-  style.stroke: "#7C3AED"
-  label: "SPE\\n(Federerad berakning)"
 }
 
 externa: Externa {
-  shape: rectangle
   style.fill: "#FED7AA"
-  style.stroke: "#EA580C"
-
   sos: Socialstyrelsen
-  ovriga: Ovriga externa
+  ovriga: Ovriga
 }
 
-# PUSH-floden
-hubb.standardpaket -> region: 1. Publicerar standardpaket {
-  style.stroke: "#2563EB"
-}
-
-region.urval -> hubb.benchmark: 2. Urval A (PN-fritt) {
-  style.stroke: "#16A34A"
-}
-
-hubb.benchmark -> region: Aterkoppling {
-  style.stroke: "#16A34A"
-  style.stroke-dash: 3
-}
-
-region.urval -> hubb.transport: 3. Krypterat paket {
-  style.stroke: "#EA580C"
-}
-
-hubb.transport -> externa.sos: Blind relay {
-  style.stroke: "#EA580C"
-}
-
-hubb.transport -> externa.ovriga: Blind relay {
-  style.stroke: "#EA580C"
-}
-
-# PULL-floden (federering)
-hubb.policy -> spe: 4. Federerad fraga {
-  style.stroke: "#7C3AED"
-}
-
-externa.ovriga -> hubb.policy: Begar analys {
-  style.stroke: "#7C3AED"
-  style.stroke-dash: 3
-}
-
-spe -> region.basunderlag: Fraga + urval {
-  style.stroke: "#7C3AED"
-}
-
-region.basunderlag -> spe: Delresultat {
-  style.stroke: "#7C3AED"
-  style.stroke-dash: 3
-}
-
-# Info-ruta
-info: {
-  shape: rectangle
-  style.fill: "#FEE2E2"
-  style.stroke: "#DC2626"
-  label: "Viktigt:\\n- Hubben kan EJ dekryptera\\n- Endast benchmark lagras\\n- Radata stannar i regionen"
-}
+hubb.standardpaket -> region: 1. Standardpaket
+region.urval -> hubb.benchmark: 2. Benchmark-data
+hubb.benchmark -> region: Aterkoppling {style.stroke-dash: 3}
+region.urval -> hubb.transport: 3. Krypterat
+hubb.transport -> externa.sos: Blind relay
+hubb.transport -> externa.ovriga: Blind relay
+hubb.policy -> spe: 4. Federerad fraga
+externa.ovriga -> hubb.policy: Begar analys {style.stroke-dash: 3}
+spe -> region.basunderlag: Fraga
+region.basunderlag -> spe: Resultat {style.stroke-dash: 3}
 `;
 
-        // Kroki encoding for D2
-        function encodeForKroki(source) {
-            const data = new TextEncoder().encode(source);
-            const compressed = pako.deflate(data, { level: 9 });
-            // Convert to base64url
-            let binary = '';
-            for (let i = 0; i < compressed.length; i++) {
-                binary += String.fromCharCode(compressed[i]);
+        let svgContent = null;
+
+        // Använd POST till kroki.io
+        async function loadDiagram() {
+            try {
+                const response = await fetch('https://kroki.io/d2/svg', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    },
+                    body: d2Code
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                svgContent = await response.text();
+                document.getElementById('diagram').innerHTML = svgContent;
+            } catch (error) {
+                console.error('Fel vid laddning:', error);
+                document.getElementById('diagram').innerHTML = `
+                    <div class="error">
+                        <p><strong>Kunde inte ladda diagrammet</strong></p>
+                        <p style="margin-top: 10px; font-size: 0.9rem;">Klicka på "Redigera online" för att se diagrammet i D2 Playground.</p>
+                        <p style="margin-top: 10px; font-size: 0.8rem; color: #666;">Fel: ${error.message}</p>
+                    </div>
+                `;
             }
-            const base64 = btoa(binary);
-            return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-        }
-
-        const encoded = encodeForKroki(d2Code);
-        const krokiServer = 'https://kroki.io';
-        const svgUrl = `${krokiServer}/d2/svg/${encoded}`;
-        const pngUrl = `${krokiServer}/d2/png/${encoded}`;
-
-        // Load diagram
-        document.addEventListener('DOMContentLoaded', function() {
-            const img = document.createElement('img');
-            img.src = svgUrl;
-            img.alt = 'Regiongemensam hubb – arkitekturvy (D2)';
-            img.onload = function() {
-                document.getElementById('diagram').innerHTML = '';
-                document.getElementById('diagram').appendChild(img);
-            };
-            img.onerror = function() {
-                document.getElementById('diagram').innerHTML = '<p style="color: #ef4444;">Kunde inte ladda diagrammet från Kroki.io. Försök igen senare eller använd "Redigera online" för att se diagrammet i D2 Playground.</p>';
-            };
-        });
-
-        function exportPNG() {
-            const a = document.createElement('a');
-            a.href = pngUrl;
-            a.download = 'regiongemensam-hubb-d2.png';
-            a.target = '_blank';
-            a.click();
         }
 
         function exportSVG() {
+            if (!svgContent) {
+                alert('Diagrammet har inte laddats ännu');
+                return;
+            }
+            const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = svgUrl;
+            a.href = url;
             a.download = 'regiongemensam-hubb-d2.svg';
-            a.target = '_blank';
             a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function exportPNG() {
+            try {
+                const response = await fetch('https://kroki.io/d2/png', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    },
+                    body: d2Code
+                });
+
+                if (!response.ok) throw new Error('Kunde inte generera PNG');
+
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'regiongemensam-hubb-d2.png';
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                alert('Kunde inte exportera PNG: ' + error.message);
+            }
         }
 
         function openInD2Playground() {
             window.open('https://play.d2lang.com/?script=' + encodeURIComponent(d2Code), '_blank');
         }
+
+        // Ladda diagrammet när sidan laddas
+        document.addEventListener('DOMContentLoaded', loadDiagram);
     </script>
 </body>
 </html>
