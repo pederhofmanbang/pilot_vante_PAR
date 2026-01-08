@@ -2,6 +2,7 @@
 ' =========================================================
 ' Regiongemensamt flöde (pilot + målbild) – Sekvensdiagram
 ' Deltagare: Region (vänster), Hubb (mitten), SPE (separat mitt), Externa användare (höger)
+' Version: Med starkare färger för bättre visuell tydlighet
 ' =========================================================
 
 title Regiongemensam hubb – flöde, federering och distribution (detaljnivå)
@@ -12,44 +13,51 @@ hide footbox
 skinparam shadowing false
 skinparam backgroundColor #FFFFFF
 skinparam sequence {
-  ArrowColor #0F172A
-  LifeLineBorderColor #475569
+  ArrowColor #1E3A5F
+  ArrowFontColor #1E3A5F
+  LifeLineBorderColor #374151
   LifeLineBackgroundColor #FFFFFF
-  ParticipantBorderColor #1E293B
-  ParticipantBackgroundColor #F8FAFC
-  ParticipantFontColor #0F172A
-  BoxBorderColor #64748B
-  BoxBackgroundColor #F1F5F9
-  GroupBackgroundColor #F8FAFC
-  GroupBorderColor #64748B
-  NoteBackgroundColor #F8FAFC
-  NoteBorderColor #94A3B8
+  ParticipantBorderColor #1F2937
+  ParticipantBackgroundColor #FFFFFF
+  ParticipantFontColor #1F2937
+  ParticipantFontStyle bold
+  BoxBorderColor #374151
+  BoxBackgroundColor #F9FAFB
+  GroupBackgroundColor #FEF3C7
+  GroupBorderColor #D97706
+  GroupFontColor #92400E
+  NoteBackgroundColor #FEF9C3
+  NoteBorderColor #CA8A04
+  NoteFontColor #713F12
+  DividerBackgroundColor #E0E7FF
+  DividerBorderColor #4F46E5
+  DividerFontColor #3730A3
 }
 
 ' ---------------------------------------------------------
-' Layout / swimlane-känsla (uppdaterade färger)
+' Layout / swimlane-känsla (STARKARE FÄRGER)
 ' ---------------------------------------------------------
-box "Region" #ECFDF3
-participant Region as "Region\n(Producent + mottagare)"
+box "Region" #C7F9CC
+participant Region as "Region\n(Producent + mottagare)" #A7F3D0
 end box
 
-box "Hubb (värd: t.ex. VGR)" #EFF6FF
-participant Hubb as "Hubb\n(Standard + benchmark + transport)"
+box "Hubb (värd: t.ex. VGR)" #BFDBFE
+participant Hubb as "Hubb\n(Standard + benchmark + transport)" #93C5FD
 end box
 
-box "SPE (kan drivas av region, myndighet eller annan aktör)" #F5F3FF
-participant SPE as "SPE\n(Federerad beräkning vid behov)"
+box "SPE (kan drivas av region, myndighet eller annan aktör)" #DDD6FE
+participant SPE as "SPE\n(Federerad beräkning vid behov)" #C4B5FD
 end box
 
-box "Externa användare" #FFF7ED
-participant SoS as "Socialstyrelsen\n(SoS)"
-participant Extern as "Övriga externa\n(Forskning, andra aktörer)"
+box "Externa användare" #FED7AA
+participant SoS as "Socialstyrelsen\n(SoS)" #FDBA74
+participant Extern as "Övriga externa\n(Forskning, andra aktörer)" #FB923C
 end box
 
 ' =========================================================
 ' 0) Översikt/legend (synlig info istället för hover)
 ' =========================================================
-note right of Hubb
+note right of Hubb #E0F2FE
 **Hubbens standardpaket (P1–P7), publiceras & versionshålls centralt**
 P1. Gemensamma variabellistor (vad som behövs, definitioner)
 P2. Gemensamma definitioner/struktur ("samma sak betyder samma sak")
@@ -60,7 +68,7 @@ P6. Mallar för leveranser till mottagare (t.ex. SoS väntetider & PAR)
 P7. Spårbarhet (version, förändringar, "vad kördes när")
 end note
 
-note right of SPE
+note right of SPE #F3E8FF
 **Vad SPE är (i det här upplägget)**
 - Kör frågor "nära datat" (i regionerna)
 - Hämtar inte hem individnivå i bulk
@@ -68,7 +76,7 @@ note right of SPE
 - Används av hubb, regioner och externa (via policy-gate)
 end note
 
-note right of SoS
+note right of SoS #FFEDD5
 **SoS:** Mottar väntetider & PAR (krypterat)
 **Övriga externa:** Forskning, jämförelsetjänster
 (kräver godkänd process/avtal)
@@ -88,7 +96,7 @@ endlegend
 ' =========================================================
 ' 0b) Fakta: ETL/DQ-steg som finns "under huven"
 ' =========================================================
-note over Region
+note over Region #DCFCE7
 **Detaljsteg som ingår i regionens körning (under huven)**
 - ETL1: Hämta från källsystem till regionalt lager ("landning")
 - DQ1: Grundkontroller (format, obligatoriska fält, kodverk)
@@ -102,7 +110,7 @@ note over Region
 - DQ3: Slutkontroll före skick (kompletthet, summeringar, avvikelser)
 end note
 
-note over Hubb
+note over Hubb #DBEAFE
 **Detaljsteg som ingår i hubbens körning (under huven)**
 - Tar emot, loggar och kvitterar (status + spårbarhet)
 - **Bearbetar/lagrar:** endast benchmark-underlag (utan person-id)
@@ -117,7 +125,7 @@ end note
 
 loop Vid uppdatering (ny version / nya krav / förbättrad logik)
   Hubb -> Region: Publicerar uppdaterat standardpaket (P1–P7)
-  note over Hubb,Region
+  note over Hubb,Region #FEF3C7
   Regionen slipper bygga om från grunden.
   Regionen uppgraderar version och kör samma flöde igen.
   end note
@@ -133,7 +141,7 @@ Region -> Region: Gör automatiska kontroller (kvalitet + rimlighet)
 Region -> Region: Räknar väntetider enligt gemensamt räknesätt (P3)
 Region -> Region: Förbereder för snabb selektering ("index") för att minimera framtida överföringar
 
-note over Region
+note over Region #DCFCE7
 **Nyckelidé:** Regionen tar fram ett bredare underlag en gång.
 Sedan görs urval/mappning per användningsfall (se nästa steg).
 end note
@@ -150,7 +158,7 @@ group Regionen gör urval/mappning per behov (utan att börja om från källorna
   Region -> Region: Urval D – för annan extern användare (t.ex. forskning – enligt godkänd process)
 end group
 
-note over Region
+note over Region #DCFCE7
 Urvalen bygger på samma basunderlag.
 Det gör att nya behov kan lösas genom nytt urval – inte nytt "specialuttag".
 end note
@@ -167,7 +175,7 @@ par Spår A: Benchmark & återkoppling (utan person-id)
 else Spår B: Distribution till externa användare (via hubben, blind relay)
   Region -> Hubb: Skickar krypterat paket (för SoS/Extern) + manifest (checksummor, metadata, version)
 
-  note over Region,Hubb
+  note over Region,Hubb #FEE2E2
   **Hubben kan inte dekryptera.**
   Den hanterar endast transport, spårbarhet, kvittens.
   end note
@@ -192,7 +200,7 @@ end
 ' =========================================================
 == 5. Federerad beräkning via SPE – PULL (sammanställda resultat) ==
 
-note over Hubb,Extern
+note over Hubb,Extern #E0E7FF
 **Federering kan initieras av:**
 • Region (för egen återkoppling/benchmark)
 • Externa användare (för sammanställda svar, via policy-gate)
@@ -200,7 +208,7 @@ Rådata flyttas aldrig centralt – endast sammanställda delresultat.
 end note
 
 alt När aggregerat räcker (ingen federering behövs)
-  note over Hubb
+  note over Hubb #DBEAFE
   Hubb använder sammanställningar utan person-id
   för jämförelser och återkoppling.
   end note
@@ -227,7 +235,7 @@ else Alt B: Extern användare initierar federerad fråga (via policy-gate)
   end
   Hubb --> Extern: Levererar sammanställt resultat (aggregerat)
 
-  note over Hubb,Extern
+  note over Hubb,Extern #FEE2E2
   **Extern får endast sammanställt resultat enligt policy.**
   Ingen åtkomst till individdata eller rådata.
   end note
@@ -238,7 +246,7 @@ end
 ' =========================================================
 == 6. Externa användare (sammanfattning) ==
 
-note over SoS,Extern
+note over SoS,Extern #FFEDD5
 **Socialstyrelsen (SoS)**
 • Mottar: Väntetider + PAR (krypterade leveranser via push)
 • Kan begära: Federerade analyser (via pull/policy-gate)
