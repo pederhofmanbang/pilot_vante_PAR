@@ -121,7 +121,30 @@ const fmt=d=>d.toLocaleDateString("sv-SE",{day:"numeric",month:"short"});
 const iso=d=>{const t=new Date(d);t.setHours(0,0,0,0);t.setDate(t.getDate()+3-(t.getDay()+6)%7);const w=new Date(t.getFullYear(),0,4);return 1+Math.round(((t-w)/864e5-3+(w.getDay()+6)%7)/7);};
 const addD=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r;};
 
-function initSchedule(tasks){const s={};const grp=new Map();tasks.forEach(t=>{if(!grp.has(t.wp))grp.set(t.wp,[]);grp.get(t.wp).push(t);});let off=0;[...grp.entries()].forEach(([wp,items])=>{if(wp==="WP0"){items.forEach((t,i)=>{const st=addD(T0,Math.floor(i/3)*7);s[t.id]={start:st,end:addD(st,6)};});off=21;}else{const wks=Math.max(2,Math.ceil(items.length/2));items.forEach((t,i)=>{const st=addD(T0,off+Math.floor(i/2)*7);s[t.id]={start:st,end:addD(st,9)};});off+=Math.max(7,(wks-1)*7);}});return s;}
+// Veckoschema per WP (veckonummer 2026)
+const WP_WEEKS = {
+  WP0:[6,8], WP1:[6,8], WP2:[6,12], WP3:[6,12], WP4:[6,12],
+  WP5:[15,20], WP6:[6,12], WP7:[8,14], WP8:[6,8], WP9:[8,12],
+  WP10:[12,16], WP11:[16,20], WP12:[19,24], WP13:[24,28],
+  WP14:[6,17], WP15:[6,11], WP16:[33,36], WP17:[6,16]
+};
+const week2date=(w)=>addD(T0,(w-6)*7);
+
+function initSchedule(tasks){
+  const s={};
+  const grp=new Map();
+  tasks.forEach(t=>{if(!grp.has(t.wp))grp.set(t.wp,[]);grp.get(t.wp).push(t);});
+  [...grp.entries()].forEach(([wp,items])=>{
+    const [ws,we]=WP_WEEKS[wp]||[6,12];
+    const totalDays=(we-ws)*7;
+    const taskDur=Math.max(5,Math.floor(totalDays/items.length));
+    items.forEach((t,i)=>{
+      const st=addD(week2date(ws),Math.floor(i*totalDays/items.length));
+      s[t.id]={start:st,end:addD(st,taskDur)};
+    });
+  });
+  return s;
+}
 
 const FIELDS=[{k:"act",l:"Aktivitet",t:"text"},{k:"desc",l:"Beskrivning",t:"area"},{k:"del",l:"Leverabel",t:"text"},{k:"pri",l:"Prioritet",t:"select",o:["P0","P1","P2"]},{k:"sta",l:"Status",t:"select",o:["Ej startad","Pågår","Klar","Blockerad"]},{k:"str",l:"Ström",t:"select",o:["Hubb","Region","Gemensamt"]},{k:"reg",l:"Region",t:"select",o:["Gemensamt","Pilotregion 1","Pilotregion 2","Pilotregion 3"]},{k:"ins",l:"Insats",t:"select",o:["S","M","L","XL"]},{k:"ans",l:"Ansvarig",t:"text"},{k:"med",l:"Medverkande",t:"text"},{k:"dep",l:"Beroenden",t:"text"},{k:"god",l:"Godkännandekriterier",t:"area"},{k:"lnk",l:"Länkar/Artefakter",t:"text"},{k:"rol",l:"Ansvarig roll",t:"text"},{k:"gdk",l:"Godkännare",t:"text"},{k:"bes",l:"Beslutsforum",t:"text"},{k:"cmt",l:"Kommentarer",t:"bigarea"}];
 
